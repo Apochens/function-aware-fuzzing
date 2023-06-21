@@ -2,20 +2,19 @@ import time
 from pathlib import Path
 from colorama import Style, Fore
 from ftplib import FTP
-from typing import List, Tuple
+from typing import List, Tuple, Any
 import argparse, subprocess, os
 import re
 
 from mutator import MutExecutor
 
 
-def simple_callback(data):
-    # print(f"{Style.DIM}{data}{Style.RESET_ALL}")
+def simple_callback(data: Any) -> None:
     return
 
 
 SEED = [
-    ['connect', '127.0.0.1', 2200],
+    ['connect', '127.0.0.1', 2200], 
     ['login', 'linuxbrew', '123456'],
 
     ["getwelcome"],
@@ -24,11 +23,11 @@ SEED = [
     ["mkd", "test"],
     ["cwd", "test"],
 
-    ["storbinary", "STOR temp1.txt", Path('temp.txt').open("rb")],
-    ["storbinary", "APPE temp1.txt", Path('temp.txt').open("rb")],
+    ["storbinary", "STOR temp1.txt", Path('temp.txt').open("r+b")],
+    ["storbinary", "APPE temp1.txt", Path('temp.txt').open("r+b")],
 
-    ["storlines", "STOR temp2.txt", Path('temp.txt').open("rb")],
-    ["storlines", "APPE temp2.txt", Path('temp.txt').open("rb")],
+    ["storlines", "STOR temp2.txt", Path('temp.txt').open("r+b")],
+    ["storlines", "APPE temp2.txt", Path('temp.txt').open("r+b")],
 
     ["rename", "temp2.txt", "test.txt"],
 

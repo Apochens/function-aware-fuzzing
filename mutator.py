@@ -21,7 +21,6 @@ class DupMutator(Mutator):
     """
     Choose one api call in a seed to duplicate it.
     """
-
     def mutate(self, seed: List):
         randpos = random.randrange(0, len(seed))
         seed.insert(randpos + 1, seed[randpos])
@@ -34,7 +33,6 @@ class SwapMutator(Mutator):
     """
     Choose two api calls in a seed to swap them
     """
-
     def mutate(self, seed: List):
         randpos1 = random.randrange(0, len(seed))
         while (randpos2 := random.randrange(0, len(seed))) == randpos1:
@@ -50,7 +48,6 @@ class ArgMutator(Mutator):
     """
     Choose one api call in a seed to mutate its arguments
     """
-
     def mutate(self, seed: List):
         randpos: int = random.randrange(0, len(seed))
         fn: List = seed[randpos]
@@ -80,7 +77,6 @@ class DelMutator(Mutator):
     """
     Choose one api call in a seed to delete it
     """
-
     def mutate(self, seed: List):
         if len(seed) > 2:
             randpos = random.randrange(0, len(seed))
@@ -90,10 +86,15 @@ class DelMutator(Mutator):
         return "del"
 
 
-class InsertMutator(Mutator):
+class InsMutator(Mutator):
     """
     Randomly insert an api call into a seed
     """
+    def mutate(self, seed: List):
+        return super().mutate(seed)
+    
+    def name(self) -> str:
+        return "Ins"
 
 
 class MutExecutor:
