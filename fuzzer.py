@@ -7,6 +7,7 @@ import argparse, subprocess, os
 import re
 
 from mutator import MutExecutor
+from seed import Seed, SEED_FTP
 
 
 def simple_callback(data: Any) -> None:
@@ -21,13 +22,14 @@ SEED = [
 
     ["pwd"],
     ["mkd", "test"],
+
     ["cwd", "test"],
 
-    ["storbinary", "STOR temp1.txt", Path('temp.txt').open("r+b")],
-    ["storbinary", "APPE temp1.txt", Path('temp.txt').open("r+b")],
+    ["storbinary", "STOR temp1.txt", Path('temp.txt').open("rb")],
+    ["storbinary", "APPE temp1.txt", Path('temp.txt').open("rb")],
 
-    ["storlines", "STOR temp2.txt", Path('temp.txt').open("r+b")],
-    ["storlines", "APPE temp2.txt", Path('temp.txt').open("r+b")],
+    ["storlines", "STOR temp2.txt", Path('temp.txt').open("rb")],
+    ["storlines", "APPE temp2.txt", Path('temp.txt').open("rb")],
 
     ["rename", "temp2.txt", "test.txt"],
 
@@ -59,6 +61,7 @@ SEED = [
 
 
 def start_server() -> subprocess.Popen:
+    """Start the FTP server"""
     server_path = "/home/linuxbrew/applications/LightFTP/Source/Release/"
     os.chdir(server_path)
     lightftp_server = "./fftp"
@@ -71,6 +74,7 @@ def start_server() -> subprocess.Popen:
 
 
 def stop_server(proc: subprocess.Popen) -> int:
+    """Stop the FTP server"""
     proc.communicate('q'.encode())
     return proc.wait()
 
@@ -104,8 +108,8 @@ def collect_coverage() -> Tuple[float, int, float, int]:
 
 class Fuzzer:
 
-    def __init__(self, seed: List, obj: str, *, timeout: int = 1, debug: bool = False) -> None:
-        self.queue: List = [seed]
+    def __init__(self, seed: Seed, obj: str, *, timeout: int = 1, debug: bool = False) -> None:
+        self.queue: List[Seed] = [seed]
         self.obj: str = obj
         self.timeout = timeout
         self.line_cov = 0
@@ -119,40 +123,36 @@ class Fuzzer:
         self.start_time = 0
         self.epoch_count = 0
 
-    def fuzz_one(self, seed: List):
+    def fuzz_one(self, seed: Seed) -> bool:
         '''execute one seed with coverage guided'''
-        success_count = fail_count = 0
         obj = get_target_client(self.obj)
 
-        print(f"Run {list(map(lambda x: x[0], seed))}")
+        print(repr(seed))
         proc = start_server()
         time.sleep(0.01)
-        for item in seed:
-            fn, args = getattr(obj, item[0]), tuple(item[1:])
-            # print(f"Executing {item[0]}...")
-            try:
-                res = fn(*args)
-                # print(f"Executed {item[0]}: {res}")
-                success_count += 1
-            except Exception as e:
-                fail_count += 1
+
+        # execute the seed
+        seed.execute(obj)
+
         stop_server(proc)
 
         # coverage guided
         cov = collect_coverage()
         if cov[1] > self.line_cov or cov[3] > self.branch_cov:
-            if self.epoch_count != 0:
-                self.queue.append(seed)
+            
             self.line_cov = cov[1]
             self.branch_cov = cov[3]
+            return True  # the seed is interesting 
+    
+        return False  # the seed is not interesting
 
     def fuzz(self):
         '''main fuzzing loop'''
-        self.start_time = time.time()
-        self.epoch_count = 0
+        self.start_time: float = time.time()
+        self.epoch_count: int = 0
 
         print(f"{Style.DIM}", end=None)
-        while (epoch_start_time := time.time()) - self.start_time < self.timeout * 60:
+        while ((epoch_start_time := time.time()) - self.start_time) < self.timeout * 60:
 
             # prepare execution queue (when epoch_count is 0, perform dry run)
             cur_queue = self.queue if self.epoch_count == 0 \
@@ -160,23 +160,28 @@ class Fuzzer:
             
             # execute
             for seed in cur_queue:
-                self.fuzz_one(seed)
+                if self.fuzz_one(seed) and self.epoch_count != 0:
+                    self.queue.append(seed)
+
+                    # record the interesting seed
+                    if self.log is not None:
+                        self.log.write(str(seed))
 
             self.epoch_count += 1
 
-            #log
+            # epoch log
             epoch_time = time.time() - epoch_start_time
-            self.write_epoch_status(epoch_time)
+            self.__write_epoch_status(epoch_time)
 
-        #log 
+        # summary log 
         total_time = time.time() - self.start_time
-        self.write_fuzz_summary(total_time)
+        self.__write_fuzz_summary(total_time)
 
-    def write_epoch_status(self, epoch_time: float):
+    def __write_epoch_status(self, epoch_time: float):
         """write status to stdout and log file"""
-        epoch_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.GREEN}Epoch {self.epoch_count}{Fore.RESET}] "
+        epoch_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.GREEN}Epoch {self.epoch_count}{Fore.RESET}]"
         epoch_string += f"interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; "
-        epoch_string += f"cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}{Style.DIM}"
+        epoch_string += f"cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}{Style.RESET_ALL}{Style.DIM}"
         print(epoch_string)
 
         # log
@@ -184,7 +189,7 @@ class Fuzzer:
             epoch_string = f"[Epoch {self.epoch_count}] interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}"
             self.log.write(f"{epoch_string}\n")
 
-    def write_fuzz_summary(self, total_time):
+    def __write_fuzz_summary(self, total_time):
         # stdout
         summary_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.BLUE}Summary{Fore.RESET}] Total {self.epoch_count} epoch - {total_time:.2f}s{Style.RESET_ALL}"
         print(summary_string)
@@ -211,5 +216,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    fuzzer = Fuzzer(SEED, args.protocol, timeout=args.timeout, debug=args.debug)
+    fuzzer = Fuzzer(Seed(SEED_FTP), args.protocol, timeout=args.timeout, debug=args.debug)
     fuzzer.fuzz()
