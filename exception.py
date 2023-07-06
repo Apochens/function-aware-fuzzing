@@ -1,6 +1,6 @@
-class FuncAwareException(Exception):
+class FAException(Exception):
     pass
 
 
-class CoverageError(FuncAwareException):
+class CoverageError(FAException):
     pass

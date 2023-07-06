@@ -1,5 +1,4 @@
 import time
-from pathlib import Path
 from colorama import Style, Fore
 from ftplib import FTP
 from typing import List, Tuple, Any
@@ -8,56 +7,6 @@ import re
 
 from mutator import MutExecutor
 from seed import Seed, SEED_FTP
-
-
-def simple_callback(data: Any) -> None:
-    return
-
-
-SEED = [
-    ['connect', '127.0.0.1', 2200], 
-    ['login', 'linuxbrew', '123456'],
-
-    ["getwelcome"],
-
-    ["pwd"],
-    ["mkd", "test"],
-
-    ["cwd", "test"],
-
-    ["storbinary", "STOR temp1.txt", Path('temp.txt').open("rb")],
-    ["storbinary", "APPE temp1.txt", Path('temp.txt').open("rb")],
-
-    ["storlines", "STOR temp2.txt", Path('temp.txt').open("rb")],
-    ["storlines", "APPE temp2.txt", Path('temp.txt').open("rb")],
-
-    ["rename", "temp2.txt", "test.txt"],
-
-    ["retrbinary", "RETR test.txt", simple_callback, 8192, 0],
-    ["retrbinary", "LIST", simple_callback],
-    ["retrbinary", "NLST", simple_callback],
-
-    ["retrlines", "RETR temp1.txt", simple_callback],
-    ["retrlines", "LIST", simple_callback],
-    ["retrlines", "NLST", simple_callback],
-
-    ["size", "test.txt"],   # Request the size of the file named filename on the server.
-    ["dir"],
-
-    ["nlst"],
-    ["mlsd"],
-
-    ["delete", "temp1.txt"],
-    ["delete", "test.txt"],
-
-    ["cwd", ".."],
-    ["rmd", "test"],
-
-    # ["abort"],
-    ["set_pasv", True],
-    # ["close"],
-    ["quit"],
-]
 
 
 def start_server() -> subprocess.Popen:

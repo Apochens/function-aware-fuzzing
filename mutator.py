@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List, Any
 import random
-import sys
 from copy import deepcopy
 
 from seed import Seed
@@ -28,6 +27,8 @@ class DupMutator(Mutator):
     Choose one api call in a seed to duplicate it.
     """
     def mutate(self, seed: Seed) -> None:
+        seed.mutations.append(self.name())
+
         randpos: int = random.randrange(0, seed.len())
         seed.insert(randpos, deepcopy(seed[randpos]))
 
@@ -40,6 +41,8 @@ class SwapMutator(Mutator):
     Choose two api calls in a seed to swap them
     """
     def mutate(self, seed: Seed) -> None:
+        seed.mutations.append(self.name())
+
         randpos1 = random.randrange(0, seed.len())
         while (randpos2 := random.randrange(0, seed.len())) == randpos1:
             continue
@@ -55,10 +58,12 @@ class DelMutator(Mutator):
     Choose one api call in a seed to delete it
     """
     def mutate(self, seed: Seed):
+        seed.mutations.append(self.name())
+
         if seed.len() > 2:
             randpos = random.randrange(0, seed.len())
             seed.fns.remove(seed[randpos])
-
+        
     def name(self) -> str:
         return "del"
     
@@ -68,6 +73,8 @@ class ArgMutator(Mutator):
     Choose one api call in a seed to mutate its arguments
     """
     def mutate(self, seed: Seed) -> None:
+        seed.mutations.append(self.name())
+
         randpos: int = random.randrange(0, seed.len())
         fn = seed[randpos]
 
@@ -107,13 +114,11 @@ class MutExecutor:
 
         # only mutate seeds with `top_n` priority
         for seed in queue[:top_n]:
-            mutated_seed: Seed = Seed.copy(seed)
 
-            # mutate
-            for mutator in random.choices(self.mutators, k=random.randint(1, mut_limit)):
+            for _ in range(0, seed.power):  # power schedule
+                mutated_seed: Seed = seed.copy()
+                mutator = random.choice(self.mutators)
                 mutator.mutate(mutated_seed)
-                mutated_seed.mutations.append(mutator.name())
-
-            mutated_queue.append(mutated_seed)
+                mutated_queue.append(mutated_seed)
 
         return mutated_queue

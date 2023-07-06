@@ -27,6 +27,14 @@ class Arg(ABC):
 
     def __repr__(self) -> str:
         return f'<{type(self)} {self.value}>'
+    
+    def __str__(self) -> str:
+        class_type = str(type(self)).split(".")[1].split("'")[0]
+        value = self.value
+        if isinstance(value, Callable):
+            value = value.__name__
+
+        return f"""<{class_type} {value}>"""
 
 
 class Fn:
@@ -41,40 +49,48 @@ class Fn:
     def execute(self, obj: object):
         real_fn = getattr(obj, self.fn_name)
         try:
-            resp = real_fn(*self.__unpack_args())
+            resp = real_fn(*[arg.unpack() for arg in self.args])
             # print(f'''{Fore.GREEN}Execution succeed{Fore.RESET}: {self.fn_name} - {resp}''')
         except Exception as e:
             # print(f'''{Fore.RED}Execution failed{Fore.RESET}: {self.fn_name} - {e}''')
             raise e
 
-    def __unpack_args(self) -> List[Any]:
-        return [arg.unpack() for arg in self.args]
-
     def __init_args(self, args: Iterable) -> List[Arg]:
         inited_args: List[Arg] = []
         for arg in args:
             type_str = str(type(arg))
-            if isinstance(arg, int):
+
+            # boolean
+            if isinstance(arg, bool):  
+                inited_args.append(BooleanArg(arg))
+                continue
+
+            # int | float
+            if isinstance(arg, int) or isinstance(arg, float):  
                 inited_args.append(NumberArg(arg))
                 continue
+
+            # string
             if isinstance(arg, str):
                 inited_args.append(StringArg(arg))
                 continue
-            if isinstance(arg, bool):
-                inited_args.append(BooleanArg(arg))
-                continue
+
+            # IO
             if "_io" in type_str:
                 arg_value = abspath(arg.name)
                 inited_args.append(FileDescriptorArg(arg_value))
                 continue
+
+            # Callable
             if isinstance(arg, Callable):
                 inited_args.append(CallableArg(arg))
                 continue
+
             print(type(arg), arg, end='\n\n')
         return inited_args
 
     def __str__(self) -> str:
-        return f"{self.fn_name}({','.join([str(arg.value) for arg in self.args])})"
+        return f"{self.fn_name}({','.join([str(arg) for arg in self.args])})"
 
 
 class Seed:
@@ -84,6 +100,8 @@ class Seed:
     def __init__(self, fn_list: List[List[Any]]) -> None:
         self.fns: List[Fn] = [Fn(fn_name, args) for fn_name, *args in fn_list]
         self.mutations: List[str] = []
+        self.power = 1
+
         self.succ_count: int = 0
         self.fail_count: int = 0
 
@@ -96,15 +114,12 @@ class Seed:
             except Exception as e:
                 self.fail_count += 1  
 
-    def save(self):
+    def save(self, path: str):
         pass
 
-    @classmethod
-    def copy(cls, seed: "Seed") -> "Seed":
-        if not isinstance(seed, Seed):
-            raise Exception("Seed.copy() cannot copy non-Seed object")
-        new_seed = cls([])
-        new_seed.fns = deepcopy(seed.fns)
+    def copy(self) -> "Seed":
+        new_seed: Seed = deepcopy(self)
+        new_seed.succ_count = new_seed.fail_count = 0
         return new_seed
         
     def len(self) -> int:
@@ -114,7 +129,7 @@ class Seed:
         self.fns.insert(pos + 1, fn)
 
     def __str__(self) -> str:
-        return '\n'.join([str(fn) for fn in self.fns]) + '\n'
+        return "<Seed\n" + '\n'.join([str(fn) for fn in self.fns]) + '\n>\n'
 
     def __repr__(self) -> str:
         return f"<Seed {self.mutations}>"
@@ -179,9 +194,9 @@ class CallableArg(Arg):
         return self.value
 
 
-########################
-#     SEED FOR FTP     #
-########################
+#############################
+#     SEED FOR LIGHTFTP     #
+#############################
 def simple_callback(data: Any) -> None:
     return
 
