@@ -188,7 +188,7 @@ class FileDescriptorArg(Arg):
 class CallableArg(Arg):
 
     def mutate(self) -> None:
-        return 
+        pass 
 
     def unpack(self) -> Callable:
         return self.value

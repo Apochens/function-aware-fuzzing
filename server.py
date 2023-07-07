@@ -35,6 +35,10 @@ class Server(ABC):
         pass
 
     def collect_coverage(self) -> Tuple[float, int, float, int]:
+        """ 
+        For now, we use gcovr to collect the coverage for convenience.
+        In the future, we will use approach like that used by AFL to collect runtime code coverage 
+        """
         gcovr_proc = subprocess.Popen(f"gcovr -r {self.root} -s | grep [lb][ir][a-z]*:", stdout=subprocess.PIPE, shell=True)
         output = gcovr_proc.communicate()[0].decode().split('\n')
 
@@ -61,7 +65,7 @@ class LightFTP(Server):
         """Terminate the LightFTP server (input a `q` from the stdin)"""
         if self.proc is None:
             return 0
-        
+
         self.proc.communicate('q'.encode())
         return self.proc.wait()
 
@@ -78,6 +82,18 @@ class ProFTPD(Server):
         return self.proc.wait()
 
 
+class PureFTPD(Server):
+
+    name = 'PureFTPD'
+
+    def terminate(self) -> int:
+        if self.proc is None:
+            return 0
+
+        self.proc.send_signal(signal.SIGKILL)
+        print(f"Exitcode: {self.proc.wait()}")
+        return self.proc.returncode
+
 class ServerBuilder:
 
     LIGHTFTP = 'LightFTP'
@@ -90,6 +106,7 @@ class ServerBuilder:
         self.config.read(config_path)
 
     def get_server(self, server: Type[Server]) -> Server:
+        """Return a wrapper instance of the given `server`"""
         try:
             section = self.config[server.name]
         except KeyError:
