@@ -22,11 +22,11 @@ class Server(ABC):
         self.proc: Optional[subprocess.Popen] = None
 
     def start(self):
-        if self.path != '':
+        if self.path:
             self.old_path = os.getcwd()
             os.chdir(self.path)
 
-        self.proc = subprocess.Popen(self.cmd.split(' '), stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
+        self.proc = subprocess.Popen(self.cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
         if self.proc is None:
             raise Exception("Cannot start server properly!")
 
@@ -55,6 +55,19 @@ class Server(ABC):
             raise Exception("Cannot parse branch coverage")
 
         return float(ln_per[:-1]), int(ln_abs), float(bc_per[:-1]), int(bc_abs)
+
+    def __str__(self) -> str:
+        return f"<Server {self.cmd} ({self.path})>"
+
+
+class Target(Server):
+
+    def terminate(self) -> int:
+        """Kill the server by default"""
+        if self.proc:
+            self.proc.kill()
+            return self.proc.returncode
+        return 0
 
 
 class LightFTP(Server):
@@ -113,3 +126,11 @@ class ServerBuilder:
             raise Exception(f"No server configuration for {server.name}!")
 
         return server(section['cmd'], section['path'], section['root'])
+    
+    def get_target(self) -> Target:
+        try:
+            target = self.config['Target']
+        except KeyError:
+            raise Exception(f"No target configuration found!")
+        
+        return Target(target['cmd'], target['path'], target['root'])

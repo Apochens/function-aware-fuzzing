@@ -6,8 +6,22 @@ from typing import List, Any, Tuple, Union, Callable, Iterable
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from colorama import Fore
+from enum import Enum
 
 from io import BufferedReader, TextIOWrapper
+
+
+class Protocol(Enum):
+    FTP = 959
+    SMTP = 5321
+
+    @classmethod
+    def new(cls, protocol: str) -> "Protocol":
+        if protocol == 'ftp':
+            return cls.FTP
+        if protocol == 'smtp':
+            return cls.SMTP
+        raise Exception("No such protocol")
 
 
 class Arg(ABC):
@@ -50,7 +64,7 @@ class Fn:
         real_fn = getattr(obj, self.fn_name)
         try:
             resp = real_fn(*[arg.unpack() for arg in self.args])
-            # print(f'''{Fore.GREEN}Execution succeed{Fore.RESET}: {self.fn_name} - {resp}''')
+            print(f'''{Fore.GREEN}Execution succeed{Fore.RESET}: {self.fn_name} - {resp}''')
         except Exception as e:
             # print(f'''{Fore.RED}Execution failed{Fore.RESET}: {self.fn_name} - {e}''')
             raise e
@@ -104,6 +118,14 @@ class Seed:
 
         self.succ_count: int = 0
         self.fail_count: int = 0
+
+    @classmethod
+    def new(cls, protocol: Protocol) -> "Seed":
+        if protocol == Protocol.FTP:
+            return cls(SEED_FTP)
+        if protocol == Protocol.SMTP:
+            return cls(SEED_SMTP)
+
 
     def execute(self, obj: object) -> None:
         """Execute the seed"""
@@ -202,9 +224,9 @@ def simple_callback(data: Any) -> None:
 
 SEED_FTP = [
     ['connect', '127.0.0.1', 2200], 
-    ['login', 'linuxbrew', '123456'],
+    ['login', 'webadmin', 'ubuntu'],
 
-    ["getwelcome"],
+    ["set_pasv", False],
 
     ["pwd"],
     ["mkd", "test"],
@@ -240,7 +262,27 @@ SEED_FTP = [
     ["rmd", "test"],
 
     # ["abort"],
-    ["set_pasv", True],
+    
     # ["close"],
     ["quit"],
+]
+
+#########################
+#     SEED FOR SMTP     #
+#########################
+SEED_SMTP = [
+    ["connect", "127.0.0.1", 25],
+    ["noop"],
+    ["help"],
+
+    ["helo"],
+    ["ehlo"],
+
+    ["rset"],
+
+    ["mail", "ubuntu@ubuntu"],
+    ["rcpt", "ubuntu@ubuntu"],
+    ["data", "hello"],
+
+    ['quit']
 ]

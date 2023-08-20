@@ -1,41 +1,47 @@
 import time
 from colorama import Style, Fore
 from ftplib import FTP
+from smtplib import SMTP
 from typing import List, Tuple, Any
 import argparse, subprocess, os
 import re
 
 from mutator import MutExecutor
-from seed import Seed, SEED_FTP
+from seed import Seed, Protocol
+from server import Target, ServerBuilder
+from utils import obsleted
 
-
+@obsleted
 def start_server() -> subprocess.Popen:
     """Start the FTP server"""
-    server_path = "/home/linuxbrew/applications/LightFTP/Source/Release/"
+    server_path = "/home/ubuntu/experiments/LightFTP-gcov/Source/Release"
     os.chdir(server_path)
-    lightftp_server = "./fftp"
+    lightftp_server = "./fftp fftp.conf 2200"
 
-    proc = subprocess.Popen([lightftp_server], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+    proc = subprocess.Popen(lightftp_server, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
     if not proc:
         raise Exception("Server down!")
 
     return proc
 
 
+@obsleted
 def stop_server(proc: subprocess.Popen) -> int:
     """Stop the FTP server"""
     proc.communicate('q'.encode())
     return proc.wait()
 
 
+@obsleted
 def get_local_time() -> str:
     fmt_str = "%Y-%m-%d-%H-%M-%S"
     return time.strftime(fmt_str)
 
 
+@obsleted
 def collect_coverage() -> Tuple[float, int, float, int]:
     """collect the execution coverage using gcovr"""
-    server_path = "/home/linuxbrew/applications/LightFTP/Source/Release/"
+    server_path = "/home/ubuntu/experiments/LightFTP-gcov/Source/Release"
     os.chdir(server_path)
     gcovr_proc = subprocess.Popen("gcovr -r .. -s | grep [lb][ir][a-z]*:", stdout=subprocess.PIPE, shell=True)
     output = gcovr_proc.communicate()[0].decode().split('\n')
@@ -55,18 +61,26 @@ def collect_coverage() -> Tuple[float, int, float, int]:
     return float(ln_per[:-1]), int(ln_abs), float(bc_per[:-1]), int(bc_abs)
 
 
+def get_target_client(protocol: Protocol) -> object:
+    if protocol == Protocol.FTP:
+        return FTP()
+    if protocol == Protocol.SMTP:
+        return SMTP()
+
+
 class Fuzzer:
 
-    def __init__(self, seed: Seed, obj: str, *, timeout: int = 1, debug: bool = False) -> None:
-        self.queue: List[Seed] = [seed]
-        self.obj: str = obj
+    def __init__(self, protocol: str, target: Target, *, timeout: int = 1, debug: bool = False) -> None:
+        self.protocol: Protocol = Protocol.new(protocol)
+        self.queue: List[Seed] = [Seed.new(self.protocol)]
         self.timeout = timeout
         self.line_cov = 0
         self.branch_cov = 0
 
+        self.target: Target = target  # Server tested
         self.mut_executor = MutExecutor()
 
-        self.log_name = f"{obj}-{get_local_time()}.log"
+        self.log_name = f"{self.protocol}-{get_local_time()}.log"
         self.log = open(self.log_name, 'w', encoding='utf-8') if debug else None
 
         self.start_time = 0
@@ -74,19 +88,21 @@ class Fuzzer:
 
     def fuzz_one(self, seed: Seed) -> bool:
         '''execute one seed with coverage guided'''
-        obj = get_target_client(self.obj)
+        obj = get_target_client(self.protocol)
 
-        print(repr(seed))
-        proc = start_server()
+        # proc = start_server()
+        self.target.start()
         time.sleep(0.01)
 
         # execute the seed
+        print(f"Start fuzz ...")
         seed.execute(obj)
 
-        stop_server(proc)
+        # stop_server(proc)
+        self.target.terminate()
 
         # coverage guided
-        cov = collect_coverage()
+        cov = self.target.collect_coverage()
         if cov[1] > self.line_cov or cov[3] > self.branch_cov:
             
             self.line_cov = cov[1]
@@ -126,6 +142,9 @@ class Fuzzer:
         total_time = time.time() - self.start_time
         self.__write_fuzz_summary(total_time)
 
+    def catch(self):
+        self.fuzz_one(self.queue[0])
+
     def __write_epoch_status(self, epoch_time: float):
         """write status to stdout and log file"""
         epoch_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.GREEN}Epoch {self.epoch_count}{Fore.RESET}]"
@@ -152,18 +171,20 @@ class Fuzzer:
         if self.log is not None:
             self.log.close()
 
-def get_target_client(protocol: str) -> object:
-    if protocol == 'ftp':
-        return FTP()
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('Function-Aware Fuzzer')
-    parser.add_argument('protocol', choices=['ftp'])
+    parser.add_argument('protocol', choices=['ftp', 'smtp'])
     parser.add_argument('-t', '--timeout', type=int, default=1)
     parser.add_argument('-d', "--debug", default=False, action='store_true')
+    parser.add_argument('-c', "--catch", default=False, action="store_true")
 
     args = parser.parse_args()
 
-    fuzzer = Fuzzer(Seed(SEED_FTP), args.protocol, timeout=args.timeout, debug=args.debug)
-    fuzzer.fuzz()
+    server_builder = ServerBuilder()
+
+    fuzzer = Fuzzer(args.protocol, server_builder.get_target(), timeout=args.timeout, debug=args.debug)
+    if args.catch:
+        fuzzer.catch()
+    else:
+        fuzzer.fuzz()
