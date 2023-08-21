@@ -7,8 +7,12 @@ from abc import ABC, abstractmethod
 from copy import deepcopy
 from colorama import Fore
 from enum import Enum
+import logging
 
 from io import BufferedReader, TextIOWrapper
+
+
+logger = logging.getLogger("apifuzz")
 
 
 class Protocol(Enum):
@@ -64,7 +68,7 @@ class Fn:
         real_fn = getattr(obj, self.fn_name)
         try:
             resp = real_fn(*[arg.unpack() for arg in self.args])
-            print(f'''{Fore.GREEN}Execution succeed{Fore.RESET}: {self.fn_name} - {resp}''')
+            logger.debug(f'''{Fore.GREEN}Execution succeed{Fore.RESET}: {self.fn_name} - {resp}''')
         except Exception as e:
             # print(f'''{Fore.RED}Execution failed{Fore.RESET}: {self.fn_name} - {e}''')
             raise e
@@ -98,6 +102,10 @@ class Fn:
             # Callable
             if isinstance(arg, Callable):
                 inited_args.append(CallableArg(arg))
+                continue
+
+            if isinstance(arg, FileDescriptorArg):
+                inited_args.append(arg)
                 continue
 
             print(type(arg), arg, end='\n\n')
@@ -179,7 +187,22 @@ class StringArg(Arg):
     Argument wrapper for string
     """
     def mutate(self) -> None:
-        pass
+
+        def random_pair() -> Tuple[int, int]:
+            pos1 = random.randrange(0, len(self.value))
+            pos2 = random.randrange(0, len(self.value))
+            return (pos1, pos2) if pos1 < pos2 else (pos2, pos1)
+
+        pos1, pos2 = random_pair()
+        
+        choice = random.randint(1, 3)
+        if choice == 1:  #slicing
+            self.value = self.value[pos1:pos2]  
+        if choice == 2:  # deletion
+            self.value = self.value[:pos1] + self.value[pos2:]  
+        if choice == 3:  # duplicate
+            self.value = self.value[:pos2] + self.value[pos1:pos2] + self.value[pos2:]  
+
 
     def unpack(self):
         return self.value
@@ -223,7 +246,6 @@ def simple_callback(data: Any) -> None:
     return
 
 SEED_FTP = [
-    ['connect', '127.0.0.1', 2200], 
     ['login', 'webadmin', 'ubuntu'],
 
     ["set_pasv", False],
@@ -233,11 +255,11 @@ SEED_FTP = [
 
     ["cwd", "test"],
 
-    ["storbinary", "STOR temp1.txt", Path('temp.txt').open("rb")],
-    ["storbinary", "APPE temp1.txt", Path('temp.txt').open("rb")],
+    ["storbinary", "STOR temp1.txt", FileDescriptorArg("temp.txt")],
+    ["storbinary", "APPE temp1.txt", FileDescriptorArg("temp.txt")],
 
-    ["storlines", "STOR temp2.txt", Path('temp.txt').open("rb")],
-    ["storlines", "APPE temp2.txt", Path('temp.txt').open("rb")],
+    ["storlines", "STOR temp2.txt", FileDescriptorArg("temp.txt")],
+    ["storlines", "APPE temp2.txt", FileDescriptorArg("temp.txt")],
 
     ["rename", "temp2.txt", "test.txt"],
 
@@ -271,18 +293,20 @@ SEED_FTP = [
 #     SEED FOR SMTP     #
 #########################
 SEED_SMTP = [
-    ["connect", "127.0.0.1", 25],
     ["noop"],
     ["help"],
 
     ["helo"],
     ["ehlo"],
 
+    ["expn", "ubuntu"],
     ["rset"],
 
     ["mail", "ubuntu@ubuntu"],
     ["rcpt", "ubuntu@ubuntu"],
     ["data", "hello"],
+
+    ["docmd", "BDAT"],
 
     ['quit']
 ]

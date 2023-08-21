@@ -2,14 +2,16 @@ import time
 from colorama import Style, Fore
 from ftplib import FTP
 from smtplib import SMTP
-from typing import List, Tuple, Any
+from typing import List, Tuple
 import argparse, subprocess, os
 import re
+import logging
 
 from mutator import MutExecutor
 from seed import Seed, Protocol
 from server import Target, ServerBuilder
-from utils import obsleted
+from utils import obsleted, Addr
+
 
 @obsleted
 def start_server() -> subprocess.Popen:
@@ -30,12 +32,6 @@ def stop_server(proc: subprocess.Popen) -> int:
     """Stop the FTP server"""
     proc.communicate('q'.encode())
     return proc.wait()
-
-
-@obsleted
-def get_local_time() -> str:
-    fmt_str = "%Y-%m-%d-%H-%M-%S"
-    return time.strftime(fmt_str)
 
 
 @obsleted
@@ -61,16 +57,29 @@ def collect_coverage() -> Tuple[float, int, float, int]:
     return float(ln_per[:-1]), int(ln_abs), float(bc_per[:-1]), int(bc_abs)
 
 
-def get_target_client(protocol: Protocol) -> object:
+def get_local_time() -> str:
+    fmt_str = "%Y-%m-%d-%H-%M-%S"
+    return time.strftime(fmt_str)
+
+
+def get_target_client(protocol: Protocol, addr: Addr) -> object:
+    """Contruct the client with the established connection to server"""
+    client: object = None
     if protocol == Protocol.FTP:
-        return FTP()
+        client = FTP()
     if protocol == Protocol.SMTP:
-        return SMTP()
+        client = SMTP()
+    
+    if client is None:
+        raise Exception(f"No such client for given protocol: {protocol}")
+
+    client.connect(host=addr[0], port=addr[1])
+    return client
 
 
 class Fuzzer:
 
-    def __init__(self, protocol: str, target: Target, *, timeout: int = 1, debug: bool = False) -> None:
+    def __init__(self, protocol: str, target: Target, addr: Addr, *, timeout: int = 1, log: bool = False) -> None:
         self.protocol: Protocol = Protocol.new(protocol)
         self.queue: List[Seed] = [Seed.new(self.protocol)]
         self.timeout = timeout
@@ -78,24 +87,24 @@ class Fuzzer:
         self.branch_cov = 0
 
         self.target: Target = target  # Server tested
+        self.addr = addr
         self.mut_executor = MutExecutor()
 
         self.log_name = f"{self.protocol}-{get_local_time()}.log"
-        self.log = open(self.log_name, 'w', encoding='utf-8') if debug else None
+        self.log = open(self.log_name, 'w', encoding='utf-8') if log else None
 
         self.start_time = 0
         self.epoch_count = 0
 
     def fuzz_one(self, seed: Seed) -> bool:
         '''execute one seed with coverage guided'''
-        obj = get_target_client(self.protocol)
+        obj = get_target_client(self.protocol, self.addr)
 
         # proc = start_server()
         self.target.start()
         time.sleep(0.01)
 
         # execute the seed
-        print(f"Start fuzz ...")
         seed.execute(obj)
 
         # stop_server(proc)
@@ -175,15 +184,23 @@ class Fuzzer:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('Function-Aware Fuzzer')
     parser.add_argument('protocol', choices=['ftp', 'smtp'])
+
+    parser.add_argument('--host', default='127.0.0.1', action="store")
+    parser.add_argument("--port", type=int, default=8080, action="store")
+
     parser.add_argument('-t', '--timeout', type=int, default=1)
-    parser.add_argument('-d', "--debug", default=False, action='store_true')
+    parser.add_argument('-d', "--debug", default=False, action="store_true")
     parser.add_argument('-c', "--catch", default=False, action="store_true")
+    parser.add_argument('-l', "--log", default=False, action="store_true")
 
     args = parser.parse_args()
 
     server_builder = ServerBuilder()
 
-    fuzzer = Fuzzer(args.protocol, server_builder.get_target(), timeout=args.timeout, debug=args.debug)
+    if args.debug:
+        logging.basicConfig(level=logging.DEBUG)
+
+    fuzzer = Fuzzer(args.protocol, server_builder.get_target(), (args.host, args.port), timeout=args.timeout, log=args.log)
     if args.catch:
         fuzzer.catch()
     else:

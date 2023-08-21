@@ -109,8 +109,6 @@ class PureFTPD(Server):
 
 class ServerBuilder:
 
-    LIGHTFTP = 'LightFTP'
-
     def __init__(self, config_path: str = './server-config.ini') -> None:
         self.config: ConfigParser = ConfigParser()
         if not os.path.exists(config_path):
