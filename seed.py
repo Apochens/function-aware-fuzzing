@@ -2,7 +2,7 @@ import random
 import sys
 from pathlib import Path
 from os.path import abspath
-from typing import List, Any, Tuple, Union, Callable, Iterable
+from typing import List, Any, Tuple, Union, Callable, Iterable, Type, TypeVar, Generic
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from colorama import Fore
@@ -236,6 +236,23 @@ class CallableArg(Arg):
         pass 
 
     def unpack(self) -> Callable:
+        return self.value
+
+
+# Generic type for enumeration
+E = TypeVar("E", bound=Enum)
+
+
+class EnumArg(Arg, Generic[E]):
+
+    def __init__(self, value: E) -> None:
+        self.value = value
+
+    def mutate(self) -> None:
+        candidate = [member for member in type(self.value)]
+        self.value = random.choice(candidate)
+    
+    def unpack(self) -> E:
         return self.value
 
 
