@@ -1,5 +1,5 @@
 """Seed for SMTP"""
-from arg import StringArg
+from ..arg import StringArg
 
 
 SEED = [
