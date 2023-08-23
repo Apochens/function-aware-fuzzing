@@ -60,7 +60,7 @@ def collect_coverage() -> Tuple[float, int, float, int]:
 
 class Fuzzer:
 
-    def __init__(self, protocol: str, target: Target, addr: Addr, *, timeout: int = 1, log: bool = False) -> None:
+    def __init__(self, protocol: str, target: Target, *, timeout: int = 1, log: bool = False) -> None:
         self.protocol: Protocol = Protocol.new(protocol)
         self.queue: List[Seed] = [Seed.new(self.protocol)]
         self.timeout = timeout
@@ -68,7 +68,6 @@ class Fuzzer:
         self.branch_cov = 0
 
         self.target: Target = target  # Server tested
-        self.addr = addr
         self.mut_executor = MutExecutor()
 
         self.log_name = f"{self.protocol.name}-{get_local_time()}.log"
@@ -79,13 +78,12 @@ class Fuzzer:
 
     def fuzz_one(self, seed: Seed) -> bool:
         '''Execute one seed with coverage guided, return true if the seed is interesting'''
-        obj = Client.new(self.protocol, self.addr)
-
         # proc = start_server()
         self.target.start()
-        time.sleep(0.01)
+        time.sleep(0.1)
 
         # execute the seed
+        obj = Client.new(self.protocol, self.target.addr)
         seed.execute(obj)
 
         # stop_server(proc)
@@ -167,9 +165,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser('Function-Aware Fuzzer')
     parser.add_argument('protocol', choices=['ftp', 'smtp', 'dns'])
 
-    parser.add_argument('--host', default='127.0.0.1', action="store")
-    parser.add_argument("--port", type=int, default=8080, action="store")
-
     parser.add_argument('-t', '--timeout', type=int, default=1)
     parser.add_argument('-d', "--debug", default=False, action="store_true")
     parser.add_argument('-c', "--catch", default=False, action="store_true")
@@ -182,7 +177,7 @@ if __name__ == "__main__":
     if args.debug:
         logging.basicConfig(level=logging.DEBUG)
 
-    fuzzer = Fuzzer(args.protocol, server_builder.get_target(), (args.host, args.port), timeout=args.timeout, log=args.log)
+    fuzzer = Fuzzer(args.protocol, server_builder.get_target(), timeout=args.timeout, log=args.log)
     if args.catch:
         fuzzer.catch()
     else:

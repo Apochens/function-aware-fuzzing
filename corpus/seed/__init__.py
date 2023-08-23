@@ -4,7 +4,7 @@ from enum import Enum
 import logging
 
 
-from fn import Fn
+from ..fn import Fn
 from utils import Protocol
 
 
@@ -29,11 +29,11 @@ class Seed:
         SEED = None
 
         if protocol == Protocol.FTP:
-            from apifuzz.corpus.seed.ftpseed import SEED
+            from .ftpseed import SEED
         if protocol == Protocol.SMTP:
-            from apifuzz.corpus.seed.smtpseed import SEED
+            from .smtpseed import SEED
         if protocol == Protocol.DNS:
-            from apifuzz.corpus.seed.dnsseed import SEED
+            from .dnsseed import SEED
         
         if SEED is None:
             raise Exception(f"No seed found for {protocol.name}")

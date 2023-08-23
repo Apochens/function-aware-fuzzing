@@ -6,13 +6,14 @@ from enum import Enum
 import sys
 import random
 
+T = TypeVar("T")
 
-class Arg(ABC):
+class Arg(ABC, Generic[T]):
     """
     The wrapper of parameters in the signature of function calls (class `Fn`).
     To inherent this abstract class, `mutate` and `unpack` must be overrided.
     """
-    def __init__(self, value, mutable: bool = True, /, name: str = "") -> None:
+    def __init__(self, value: T, mutable: bool = True, /, name: str = "") -> None:
         self.value = value
         self.__mutable = mutable
 
@@ -40,7 +41,7 @@ class Arg(ABC):
         return f"""<{class_type} {value}>"""
     
 
-class NumberArg(Arg):
+class NumberArg(Arg[int]):
     """
     Argument wrapper for number (i.e., int and float)
     """
@@ -51,7 +52,7 @@ class NumberArg(Arg):
         return self.value
 
 
-class StringArg(Arg):
+class StringArg(Arg[str]):
     """
     Argument wrapper for string
     """
@@ -61,6 +62,10 @@ class StringArg(Arg):
             pos1 = random.randrange(0, len(self.value))
             pos2 = random.randrange(0, len(self.value))
             return (pos1, pos2) if pos1 < pos2 else (pos2, pos1)
+
+        if len(self.value) == 0:
+            #TODO: write a mutation
+            return
 
         pos1, pos2 = random_pair()
         
@@ -77,7 +82,7 @@ class StringArg(Arg):
         return self.value
 
 
-class BooleanArg(Arg):
+class BooleanArg(Arg[bool]):
     """
     Argument wrapper for bool
     """
@@ -88,7 +93,7 @@ class BooleanArg(Arg):
         return self.value
 
 
-class FileDescriptorArg(Arg):
+class FileDescriptorArg(Arg[Path]):
     """
     Argument wrapper for string
     """
@@ -96,10 +101,10 @@ class FileDescriptorArg(Arg):
         pass
 
     def unpack(self) -> Union[BufferedReader, TextIOWrapper]:
-        return Path(self.value).open('rb')
+        return self.value.open('rb')
 
 
-class CallableArg(Arg):
+class CallableArg(Arg[Callable]):
     """
     Argument wrapper for function
     """
@@ -114,12 +119,10 @@ class CallableArg(Arg):
 E = TypeVar("E", bound=Enum)
 
 
-class EnumArg(Arg, Generic[E]):
+class EnumArg(Arg[E]):
     """
     Argument wrapper for enumeration
     """
-    def __init__(self, value: E) -> None:
-        self.value = value
 
     def mutate(self) -> None:
         candidate = [member for member in type(self.value)]

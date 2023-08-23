@@ -1,10 +1,11 @@
 """Seed for FTP"""
 from pathlib import Path
-from arg import FileDescriptorArg, BooleanArg, StringArg, NumberArg, CallableArg
+
+from ..arg import FileDescriptorArg, BooleanArg, StringArg, NumberArg, CallableArg
 
 
 # Create the dummy file temp.txt
-dummy_file = Path("./dummy/temp.txt")
+dummy_file = Path("./dummy/temp.txt").absolute()
 dummy_file.parent.mkdir(exist_ok=True)
 dummy_file.write_text("Hello")
 
@@ -23,11 +24,11 @@ SEED = [
 
     ["cwd", StringArg("test")],
 
-    ["storbinary", StringArg("STOR temp1.txt"), FileDescriptorArg("./dummy/temp.txt")],
-    ["storbinary", StringArg("APPE temp1.txt"), FileDescriptorArg("./dummy/temp.txt")],
+    ["storbinary", StringArg("STOR temp1.txt"), FileDescriptorArg(dummy_file)],
+    ["storbinary", StringArg("APPE temp1.txt"), FileDescriptorArg(dummy_file)],
 
-    ["storlines", StringArg("STOR temp2.txt"), FileDescriptorArg("./dummy/temp.txt")],
-    ["storlines", StringArg("APPE temp2.txt"), FileDescriptorArg("./dummy/temp.txt")],
+    ["storlines", StringArg("STOR temp2.txt"), FileDescriptorArg(dummy_file)],
+    ["storlines", StringArg("APPE temp2.txt"), FileDescriptorArg(dummy_file)],
 
     ["rename", StringArg("temp2.txt"), StringArg("test.txt")],
 

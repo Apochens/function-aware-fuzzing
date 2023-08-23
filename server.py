@@ -7,19 +7,26 @@ import signal
 from configparser import ConfigParser
 from typing import List, Optional, Tuple, Dict, Any, Type
 from abc import ABC, abstractmethod
+from utils import Addr
 
 
 class Server(ABC):
     """Abstract server wrapper"""
     name = "ServerWrapper"
 
-    def __init__(self, cmd: str, path: str = '', root: str = '.') -> None:
+    def __init__(self, cmd: str, path: str, root: str, host: str, port: int) -> None:
         self.cmd: str = cmd
         self.path: str = path
         self.root: str = root
         self.old_path: str = ""
+        self.host = host
+        self.port = port
 
         self.proc: Optional[subprocess.Popen] = None
+
+    @property
+    def addr(self) -> Addr:
+        return (self.host, self.port)
 
     def start(self):
         if self.path:
@@ -116,19 +123,10 @@ class ServerBuilder:
         
         self.config.read(config_path)
 
-    def get_server(self, server: Type[Server]) -> Server:
-        """Return a wrapper instance of the given `server`"""
-        try:
-            section = self.config[server.name]
-        except KeyError:
-            raise Exception(f"No server configuration for {server.name}!")
-
-        return server(section['cmd'], section['path'], section['root'])
-    
     def get_target(self) -> Target:
         try:
             target = self.config['Target']
         except KeyError:
             raise Exception(f"No target configuration found!")
         
-        return Target(target['cmd'], target['path'], target['root'])
+        return Target(target['cmd'], target['path'], target['root'], target['host'], int(target['port']))

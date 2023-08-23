@@ -3,7 +3,7 @@ from typing import List
 
 from colorama import Fore
 
-from arg import Arg
+from .arg import Arg
 
 
 logger = logging.getLogger("apifuzz")
@@ -26,44 +26,6 @@ class Fn:
         except Exception as e:
             logger.error(f'''{Fore.RED}Execution failed{Fore.RESET}: {self.fn_name} - {e}''')
             raise e
-
-    # def __init_args(self, args: Iterable) -> List[Arg]:
-    #     inited_args: List[Arg] = []
-    #     for arg in args:
-    #         type_str = str(type(arg))
-
-    #         # boolean
-    #         if isinstance(arg, bool):  
-    #             inited_args.append(BooleanArg(arg))
-    #             continue
-
-    #         # int | float
-    #         if isinstance(arg, int) or isinstance(arg, float):  
-    #             inited_args.append(NumberArg(arg))
-    #             continue
-
-    #         # string
-    #         if isinstance(arg, str):
-    #             inited_args.append(StringArg(arg))
-    #             continue
-
-    #         # IO
-    #         if "_io" in type_str:
-    #             arg_value = abspath(arg.name)
-    #             inited_args.append(FileDescriptorArg(arg_value))
-    #             continue
-
-    #         # Callable
-    #         if isinstance(arg, Callable):
-    #             inited_args.append(CallableArg(arg))
-    #             continue
-
-    #         if isinstance(arg, FileDescriptorArg):
-    #             inited_args.append(arg)
-    #             continue
-
-    #         print(type(arg), arg, end='\n\n')
-    #     return inited_args
 
     def __str__(self) -> str:
         return f"{self.fn_name}({','.join([str(arg) for arg in self.args])})"

@@ -3,7 +3,7 @@ from typing import List
 import random
 from copy import deepcopy
 
-from seed import Seed
+from corpus.seed import Seed
 
 
 class Mutator(ABC):
