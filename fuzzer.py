@@ -1,17 +1,18 @@
 import time
 from colorama import Style, Fore
-from ftplib import FTP
-from smtplib import SMTP
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import argparse, subprocess, os
 import re
 import logging
 
 from mutator import MutExecutor
-from seed import Seed, Protocol
+from corpus.seed import Seed
 from server import Target, ServerBuilder
-from utils import obsleted, Addr
+from utils import obsleted, Addr, Protocol, get_local_time
+from client import Client
 
+
+Interesting = bool
 
 @obsleted
 def start_server() -> subprocess.Popen:
@@ -57,26 +58,6 @@ def collect_coverage() -> Tuple[float, int, float, int]:
     return float(ln_per[:-1]), int(ln_abs), float(bc_per[:-1]), int(bc_abs)
 
 
-def get_local_time() -> str:
-    fmt_str = "%Y-%m-%d-%H-%M-%S"
-    return time.strftime(fmt_str)
-
-
-def get_target_client(protocol: Protocol, addr: Addr) -> object:
-    """Contruct the client with the established connection to server"""
-    client: object = None
-    if protocol == Protocol.FTP:
-        client = FTP()
-    if protocol == Protocol.SMTP:
-        client = SMTP()
-    
-    if client is None:
-        raise Exception(f"No such client for given protocol: {protocol}")
-
-    client.connect(host=addr[0], port=addr[1])
-    return client
-
-
 class Fuzzer:
 
     def __init__(self, protocol: str, target: Target, addr: Addr, *, timeout: int = 1, log: bool = False) -> None:
@@ -90,15 +71,15 @@ class Fuzzer:
         self.addr = addr
         self.mut_executor = MutExecutor()
 
-        self.log_name = f"{self.protocol}-{get_local_time()}.log"
+        self.log_name = f"{self.protocol.name}-{get_local_time()}.log"
         self.log = open(self.log_name, 'w', encoding='utf-8') if log else None
 
         self.start_time = 0
         self.epoch_count = 0
 
     def fuzz_one(self, seed: Seed) -> bool:
-        '''execute one seed with coverage guided'''
-        obj = get_target_client(self.protocol, self.addr)
+        '''Execute one seed with coverage guided, return true if the seed is interesting'''
+        obj = Client.new(self.protocol, self.addr)
 
         # proc = start_server()
         self.target.start()
@@ -120,7 +101,7 @@ class Fuzzer:
     
         return False  # the seed is not interesting
 
-    def fuzz(self):
+    def fuzz(self) -> None:
         '''main fuzzing loop'''
         self.start_time: float = time.time()
         self.epoch_count: int = 0
@@ -151,7 +132,8 @@ class Fuzzer:
         total_time = time.time() - self.start_time
         self.__write_fuzz_summary(total_time)
 
-    def catch(self):
+    def catch(self) -> None:
+        """Only run the initial seeds"""
         self.fuzz_one(self.queue[0])
 
     def __write_epoch_status(self, epoch_time: float):
@@ -183,7 +165,7 @@ class Fuzzer:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('Function-Aware Fuzzer')
-    parser.add_argument('protocol', choices=['ftp', 'smtp'])
+    parser.add_argument('protocol', choices=['ftp', 'smtp', 'dns'])
 
     parser.add_argument('--host', default='127.0.0.1', action="store")
     parser.add_argument("--port", type=int, default=8080, action="store")

@@ -79,7 +79,8 @@ class ArgMutator(Mutator):
         fn = seed[randpos]
 
         for arg in fn.args:
-            arg.mutate()
+            if arg.mutable:
+                arg.mutate()
     
     def name(self) -> str:
         return "arg"
@@ -93,7 +94,7 @@ class InsMutator(Mutator):
         return 
     
     def name(self) -> str:
-        return "Ins"
+        return "ins"
 
 
 class MutExecutor:
