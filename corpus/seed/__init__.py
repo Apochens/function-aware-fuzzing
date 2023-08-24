@@ -4,11 +4,12 @@ from enum import Enum
 import logging
 
 
-from ..fn import Fn
+from corpus.fn import Fn
+from exception import FnExecFailed
 from utils import Protocol
 
 
-logger = logging.getLogger("apifuzz")
+logger = logging.getLogger("seed")
 
 
 class Seed:
@@ -41,7 +42,8 @@ class Seed:
         if len(SEED) == 0:
             logger.warning("The initial seed has no api call.")
 
-        return cls(SEED)  # TODO: Add support for DNS
+        logger.debug(f"Use {protocol.name} seed")
+        return cls(SEED)
 
     def execute(self, obj: object) -> None:
         """
@@ -52,9 +54,10 @@ class Seed:
         """
         for fn in self.fns:
             try:
+                logger.debug(f"Executing {fn.fn_name}: {fn}")
                 fn.execute(obj)
                 self.succ_count += 1
-            except Exception as e:
+            except FnExecFailed:
                 self.fail_count += 1  
 
     def save(self, path: str):

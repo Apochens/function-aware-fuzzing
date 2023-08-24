@@ -33,12 +33,12 @@ class Arg(ABC, Generic[T]):
         return f'<{type(self)} {self.value}>'
     
     def __str__(self) -> str:
-        class_type = str(type(self)).split(".")[1].split("'")[0]
+        class_type = str(type(self)).split(".")[-1].split("'")[0]
         value = self.value
         if isinstance(value, Callable):
             value = value.__name__
 
-        return f"""<{class_type} {value}>"""
+        return f"<{class_type} {value}>"
     
 
 class NumberArg(Arg[int]):
