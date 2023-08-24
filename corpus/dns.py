@@ -3,7 +3,7 @@ from dns.rdatatype import RdataType
 from dns.rdataclass import RdataClass
 
 
-from corpus.arg import StringArg, EnumArg
+from seed.arg import StringArg, EnumArg
 
 
 SEED = [

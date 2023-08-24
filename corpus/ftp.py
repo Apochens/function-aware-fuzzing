@@ -1,7 +1,7 @@
 """Seed for FTP"""
 from pathlib import Path
 
-from ..arg import FileDescriptorArg, BooleanArg, StringArg, NumberArg, CallableArg
+from seed.arg import FileDescriptorArg, BooleanArg, StringArg, NumberArg, CallableArg
 
 
 # Create the dummy file temp.txt

@@ -3,7 +3,7 @@ from typing import List
 
 from colorama import Fore
 
-from corpus.arg import Arg
+from seed.arg import Arg
 from exception import FnExecFailed, FnNotFound
 
 

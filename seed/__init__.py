@@ -4,7 +4,7 @@ from enum import Enum
 import logging
 
 
-from corpus.fn import Fn
+from seed.fn import Fn
 from exception import FnExecFailed
 from utils import Protocol
 
@@ -24,26 +24,26 @@ class Seed:
         self.succ_count: int = 0
         self.fail_count: int = 0
 
-    @classmethod
-    def new(cls, protocol: Protocol) -> "Seed":
-        """Construct the corresponding seed"""
-        SEED = None
+    # @classmethod
+    # def new(cls, protocol: Protocol) -> "Seed":
+    #     """Construct the corresponding seed"""
+    #     SEED = None
 
-        if protocol == Protocol.FTP:
-            from .ftpseed import SEED
-        if protocol == Protocol.SMTP:
-            from .smtpseed import SEED
-        if protocol == Protocol.DNS:
-            from .dnsseed import SEED
+    #     if protocol == Protocol.FTP:
+    #         from fazz.corpus.ftp import SEED
+    #     if protocol == Protocol.SMTP:
+    #         from fazz.corpus.smtp import SEED
+    #     if protocol == Protocol.DNS:
+    #         from fazz.corpus.dns import SEED
         
-        if SEED is None:
-            raise Exception(f"No seed found for {protocol.name}")
+    #     if SEED is None:
+    #         raise Exception(f"No seed found for {protocol.name}")
         
-        if len(SEED) == 0:
-            logger.warning("The initial seed has no api call.")
+    #     if len(SEED) == 0:
+    #         logger.warning("The initial seed has no api call.")
 
-        logger.debug(f"Use {protocol.name} seed")
-        return cls(SEED)
+    #     logger.debug(f"Use {protocol.name} seed")
+    #     return cls(SEED)
 
     def execute(self, obj: object) -> None:
         """
