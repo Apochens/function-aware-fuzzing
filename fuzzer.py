@@ -4,6 +4,7 @@ from typing import List, Tuple, Optional
 import argparse, subprocess, os
 import re
 import logging
+from pathlib import Path
 
 from mutator import MutExecutor
 from corpus import new_seed
@@ -73,8 +74,7 @@ class Fuzzer:
         self.target: Target = target  # Server tested
         self.mut_executor = MutExecutor()
 
-        self.log_name = f"{self.protocol.name}-{get_local_time()}.log"
-        self.log = open(self.log_name, 'w', encoding='utf-8') if log else None
+        self.log = self.create_log() if log else None
 
         self.start_time = 0
         self.epoch_count = 0
@@ -142,6 +142,11 @@ class Fuzzer:
         self.fuzz_one(self.queue[0])
 
         self.__write_epoch_status(1)
+
+    def create_log(self):
+        log_path = Path(f"./log/{self.protocol.name}-{get_local_time()}.log")
+        log_path.parent.mkdir(exist_ok=True)
+        return log_path.open("w", encoding="utf-8")
 
     def __write_epoch_status(self, epoch_time: float):
         """write status to stdout and log file"""

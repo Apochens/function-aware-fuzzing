@@ -38,7 +38,7 @@ class Fn:
 
         try:
             resp = real_fn(*[arg.unpack() for arg in self.args])
-            print(f'''{Fore.GREEN}Execution succeed{Fore.RESET}: {self.fn_name} - {resp}''')
+            logger.debug(f'''{Fore.GREEN}Execution succeed{Fore.RESET}: {self.fn_name} - {resp}''')
         except Exception as e:
             logger.error(f'''{Fore.RED}Execution failed{Fore.RESET}: {self.fn_name} - {e}''')
             raise FnExecFailed
