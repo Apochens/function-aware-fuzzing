@@ -135,7 +135,12 @@ class Fuzzer:
     def catch(self) -> None:
         """Only run the initial seeds"""
         logger.debug("Run one round for tcpdump or initialization test")
+        self.start_time: float = time.time()
+        self.epoch_count: int = 0
+
         self.fuzz_one(self.queue[0])
+        
+        self.__write_epoch_status(1)
 
     def __write_epoch_status(self, epoch_time: float):
         """write status to stdout and log file"""
