@@ -6,7 +6,8 @@ import re
 import logging
 
 from mutator import MutExecutor
-from corpus.seed import Seed
+from corpus import new_seed
+from seed import Seed
 from server import Target, ServerBuilder
 from utils import obsleted, Addr, Protocol, get_local_time
 from client import Client
@@ -64,7 +65,7 @@ class Fuzzer:
 
     def __init__(self, protocol: str, target: Target, *, timeout: int = 1, log: bool = False) -> None:
         self.protocol: Protocol = Protocol.new(protocol)
-        self.queue: List[Seed] = [Seed.new(self.protocol)]
+        self.queue: List[Seed] = [new_seed(self.protocol)]
         self.timeout = timeout
         self.line_cov = 0
         self.branch_cov = 0
@@ -139,7 +140,7 @@ class Fuzzer:
         self.epoch_count: int = 0
 
         self.fuzz_one(self.queue[0])
-        
+
         self.__write_epoch_status(1)
 
     def __write_epoch_status(self, epoch_time: float):

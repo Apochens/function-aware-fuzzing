@@ -12,11 +12,11 @@ def new_seed(protocol: Protocol) -> Seed:
     SEED = None
 
     if protocol == Protocol.FTP:
-        from .ftp import SEED
+        from corpus.ftp import SEED
     if protocol == Protocol.SMTP:
-        from .smtp import SEED
+        from corpus.smtp import SEED
     if protocol == Protocol.DNS:
-        from .dns import SEED
+        from corpus.dns import SEED
     
     if SEED is None:
         raise Exception(f"No seed found for {protocol.name}")
