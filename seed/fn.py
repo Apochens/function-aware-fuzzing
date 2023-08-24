@@ -30,8 +30,6 @@ class Fn:
             ExecutionFailed: When the client fails to execute the given function 
                 (including exceptions raised by the executed function when it handles error messages from the server )
         """
-        logger.debug("de")
-
         try:
             real_fn = getattr(obj, self.fn_name)
         except AttributeError:
