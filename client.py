@@ -1,6 +1,10 @@
 from typing import Optional
+import logging
 
 from utils import Protocol, Addr
+
+
+logger = logging.getLogger("client")
 
 
 class Client:
@@ -32,4 +36,6 @@ class Client:
         if client is None:
             raise Exception(f"No such client for given protocol: {protocol.name}")
 
+
+        logger.debug(f"Use {protocol.name} client")
         return client

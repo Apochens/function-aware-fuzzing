@@ -1,13 +1,16 @@
 """Server wrappers"""
-
 import os
 import subprocess
 import re
 import signal
+import logging
 from configparser import ConfigParser
 from typing import List, Optional, Tuple, Dict, Any, Type
 from abc import ABC, abstractmethod
 from utils import Addr
+
+
+logger = logging.getLogger("server")
 
 
 class Server(ABC):
@@ -36,6 +39,10 @@ class Server(ABC):
         self.proc = subprocess.Popen(self.cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
         if self.proc is None:
             raise Exception("Cannot start server properly!")
+        if self.proc.returncode:
+            raise Exception("Server is down after starting!")
+        
+        logger.debug(f"Server is up at {self.addr}, pid is {self.proc.pid}")
 
     @abstractmethod
     def terminate(self) -> int:
@@ -72,6 +79,7 @@ class Target(Server):
     def terminate(self) -> int:
         """Kill the server by default"""
         if self.proc:
+            # self.proc.terminate()
             self.proc.kill()
             return self.proc.returncode
         return 0

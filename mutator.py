@@ -41,6 +41,12 @@ class SwapMutator(Mutator):
     Choose two api calls in a seed to swap them
     """
     def mutate(self, seed: Seed) -> None:
+
+        # If the number of API calls in a seed is less than 2, 
+        # it will cause an infinite loop when choosing API calls to exchange 
+        if seed.len() < 2:
+            return
+
         seed.mutations.append(self.name())
 
         randpos1 = random.randrange(0, seed.len())

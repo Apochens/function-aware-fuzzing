@@ -13,6 +13,8 @@ from client import Client
 
 
 Interesting = bool
+logger = logging.getLogger("fuzzer")
+
 
 @obsleted
 def start_server() -> subprocess.Popen:
@@ -132,6 +134,7 @@ class Fuzzer:
 
     def catch(self) -> None:
         """Only run the initial seeds"""
+        logger.debug("Run one round for tcpdump or initialization test")
         self.fuzz_one(self.queue[0])
 
     def __write_epoch_status(self, epoch_time: float):
