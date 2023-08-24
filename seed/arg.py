@@ -41,11 +41,15 @@ class Arg(ABC, Generic[T]):
         return f"<{class_type} {value}>"
     
 
-class NumberArg(Arg[int]):
+Number = Tuple[int, float]
+
+
+class NumberArg(Arg[Number]):
     """
     Argument wrapper for number (i.e., int and float)
     """
     def mutate(self) -> None:
+        #TODO: int or float
         self.value = random.randint(-sys.maxsize, sys.maxsize)
 
     def unpack(self) -> Union[int, float]:
@@ -76,7 +80,6 @@ class StringArg(Arg[str]):
             self.value = self.value[:pos1] + self.value[pos2:]  
         if choice == 3:  # duplicate
             self.value = self.value[:pos2] + self.value[pos1:pos2] + self.value[pos2:]  
-
 
     def unpack(self):
         return self.value

@@ -21,7 +21,6 @@ class Fn:
 
     def execute(self, obj: object):
         """
-        
         Args:
             obj (object): The corresponding client
 
