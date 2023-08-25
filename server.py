@@ -4,13 +4,16 @@ import subprocess
 import re
 import signal
 import logging
+from pathlib import Path
 from configparser import ConfigParser
-from typing import List, Optional, Tuple, Dict, Any, Type
+from typing import Optional, Tuple, Union
 from abc import ABC, abstractmethod
-from utils import Addr
 
+from utils import Addr
+from exception import ServerConfigNotFound, ServerTerminated, ServerNotStarted
 
 logger = logging.getLogger("server")
+SERVER_CONFIG_PATH = Path(__file__).parent.joinpath("server-config.ini")
 
 
 class Server(ABC):
@@ -22,14 +25,15 @@ class Server(ABC):
         self.path: str = path
         self.root: str = root
         self.old_path: str = ""
-        self.host = host
-        self.port = port
+
+        self.__host = host
+        self.__port = port
 
         self.proc: Optional[subprocess.Popen] = None
 
     @property
     def addr(self) -> Addr:
-        return (self.host, self.port)
+        return (self.__host, self.__port)
 
     def start(self):
         if self.path:
@@ -38,9 +42,9 @@ class Server(ABC):
 
         self.proc = subprocess.Popen(self.cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
         if self.proc is None:
-            raise Exception("Cannot start server properly!")
+            raise ServerNotStarted("Cannot start server properly!")
         if self.proc.returncode:
-            raise Exception("Server is down after starting!")
+            raise ServerTerminated("Server is down after starting!")
         
         logger.debug(f"Server is up at {self.addr}, pid is {self.proc.pid}")
 
@@ -79,8 +83,9 @@ class Target(Server):
     def terminate(self) -> int:
         """Kill the server by default"""
         if self.proc:
+            subprocess.run("echo $(pgrep dnsmasq); kill -s 15 $(pgrep dnsmasq)", shell=True)
             # self.proc.terminate()
-            self.proc.kill()
+            # self.proc.kill()
             return self.proc.returncode
         return 0
 
@@ -124,11 +129,13 @@ class PureFTPD(Server):
 
 class ServerBuilder:
 
-    def __init__(self, config_path: str = './server-config.ini') -> None:
+    def __init__(self, config_path: Union[str, Path] = SERVER_CONFIG_PATH) -> None:
+
+        config_path = Path(config_path) if isinstance(config_path, str) else config_path
+        if not config_path.exists():
+            raise ServerConfigNotFound(f"No such configuration file: {config_path}")
+
         self.config: ConfigParser = ConfigParser()
-        if not os.path.exists(config_path):
-            raise Exception(f"No such configuration file: {config_path}")
-        
         self.config.read(config_path)
 
     def get_target(self) -> Target:

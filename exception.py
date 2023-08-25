@@ -33,3 +33,7 @@ class ServerNotStarted(ServerException):
 
 class ServerTerminated(ServerException):
     pass
+
+
+class ServerConfigNotFound(ServerException):
+    pass
