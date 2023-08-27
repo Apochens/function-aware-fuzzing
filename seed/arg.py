@@ -13,7 +13,7 @@ class Arg(ABC, Generic[T]):
     The wrapper of parameters in the signature of function calls (class `Fn`).
     To inherent this abstract class, `mutate` and `unpack` must be overrided.
     """
-    def __init__(self, value: T, mutable: bool = True, /, name: str = "") -> None:
+    def __init__(self, value: T, /, mutable: bool = True, name: str = "") -> None:
         self.value = value
         self.__mutable = mutable
 
@@ -41,7 +41,7 @@ class Arg(ABC, Generic[T]):
         return f"<{class_type} {value}>"
     
 
-Number = Tuple[int, float]
+Number = Union[int, float]
 
 
 class NumberArg(Arg[Number]):
@@ -49,8 +49,10 @@ class NumberArg(Arg[Number]):
     Argument wrapper for number (i.e., int and float)
     """
     def mutate(self) -> None:
-        #TODO: int or float
-        self.value = random.randint(-sys.maxsize, sys.maxsize)
+        if isinstance(self.value, int):
+            self.value = random.randint(-sys.maxsize, sys.maxsize)
+        if isinstance(self.value, float):
+            self.value = random.uniform(sys.float_info.min, sys.float_info.max)
 
     def unpack(self) -> Union[int, float]:
         return self.value
@@ -74,7 +76,7 @@ class StringArg(Arg[str]):
         pos1, pos2 = random_pair()
         
         choice = random.randint(1, 3)
-        if choice == 1:  #slicing
+        if choice == 1:  # slicing
             self.value = self.value[pos1:pos2]  
         if choice == 2:  # deletion
             self.value = self.value[:pos1] + self.value[pos2:]  
@@ -90,7 +92,7 @@ class BooleanArg(Arg[bool]):
     Argument wrapper for bool
     """
     def mutate(self) -> None:
-        self.value = random.choice([True, False])
+        self.value = not self.value
 
     def unpack(self) -> bool:
         return self.value

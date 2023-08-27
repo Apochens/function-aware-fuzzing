@@ -6,6 +6,11 @@ class CoverageError(FAException):
     pass
 
 
+
+"""
+Exceptions related to Fn
+"""
+
 class FnException(FAException):
     pass
 
@@ -23,6 +28,10 @@ class FnNotFound(FnException):
     pass
 
 
+"""
+Exceptions related to Server
+"""
+
 class ServerException(FAException):
     pass
 
@@ -36,4 +45,16 @@ class ServerTerminated(ServerException):
 
 
 class ServerConfigNotFound(ServerException):
+    pass
+
+
+"""
+Exceptions related to Seed
+"""
+
+class SeedException(FAException):
+    pass
+
+
+class SeedDryRunTimeout(SeedException):
     pass

@@ -2,14 +2,23 @@ from typing import List, Any
 from copy import deepcopy
 from enum import Enum
 import logging
-
+from pathlib import Path
+import pickle
 
 from seed.fn import Fn
 from exception import FnExecFailed
-from utils import Protocol
+from utils import get_local_time
 
 
+QUEUE_INDEX = 0
 logger = logging.getLogger("seed")
+
+
+class SeedStatus(Enum):
+    Timeout = -1
+    Boring = 0
+    Interesting = 1
+    Crash = 2
 
 
 class Seed:
@@ -24,33 +33,14 @@ class Seed:
         self.succ_count: int = 0
         self.fail_count: int = 0
 
-    # @classmethod
-    # def new(cls, protocol: Protocol) -> "Seed":
-    #     """Construct the corresponding seed"""
-    #     SEED = None
-
-    #     if protocol == Protocol.FTP:
-    #         from fazz.corpus.ftp import SEED
-    #     if protocol == Protocol.SMTP:
-    #         from fazz.corpus.smtp import SEED
-    #     if protocol == Protocol.DNS:
-    #         from fazz.corpus.dns import SEED
-        
-    #     if SEED is None:
-    #         raise Exception(f"No seed found for {protocol.name}")
-        
-    #     if len(SEED) == 0:
-    #         logger.warning("The initial seed has no api call.")
-
-    #     logger.debug(f"Use {protocol.name} seed")
-    #     return cls(SEED)
-
     def execute(self, obj: object) -> None:
         """
         Execute the seed
         
         Args:
             obj (object): The corresponding client or library for executing the seed (APIs)
+
+        Returns True when execution timeouts, otherwise False
         """
         for fn in self.fns:
             try:
@@ -60,8 +50,22 @@ class Seed:
             except FnExecFailed:
                 self.fail_count += 1  
 
-    def save(self, path: str):
-        pass
+    def save(self, path: Path, status: SeedStatus) -> None:
+        """
+        Save this seed (Interesting or Crash) into binary file by pickling
+        """
+        file = None
+
+        if status == SeedStatus.Interesting:
+            logger.debug("Save seed causing a coverage increase.")
+            file = path.joinpath(f"cov_{get_local_time()}_{QUEUE_INDEX:07d}")
+
+        if status == SeedStatus.Crash:
+            logger.debug("Save seed causing a crash.")
+            file = path.joinpath(f"crash_{get_local_time()}_{QUEUE_INDEX:07d}")
+
+        if file is not None:
+            pickle.dump(self, file.open('wb'))
 
     def copy(self) -> "Seed":
         new_seed: Seed = deepcopy(self)
