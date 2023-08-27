@@ -152,14 +152,14 @@ class Fuzzer:
 
     def __write_epoch_status(self, epoch_time: float) -> None:
         """write status to stdout and log file"""
-        epoch_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.GREEN}Epoch {self.epoch_count}{Fore.RESET}] "
+        epoch_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.GREEN}{self.epoch_count:05d}{Fore.RESET}] "
         epoch_string += f"- {format_time(time.time() - self.start_time)} - interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; "
         epoch_string += f"cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}{Style.RESET_ALL}{Style.DIM}"
         print(epoch_string)
 
         # log
         if self.log is not None:
-            epoch_string = f"[Epoch {self.epoch_count}] interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}"
+            epoch_string = f"[{self.epoch_count:05d}] interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}"
             self.log.write(f"{epoch_string}\n")
 
     def __write_fuzz_summary(self, total_time: float) -> None:
