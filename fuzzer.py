@@ -153,7 +153,7 @@ class Fuzzer:
     def __write_epoch_status(self, epoch_time: float) -> None:
         """write status to stdout and log file"""
         epoch_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.GREEN}Epoch {self.epoch_count}{Fore.RESET}] "
-        epoch_string += f"{format_time(time.time() - self.start_time)} - interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; "
+        epoch_string += f"- {format_time(time.time() - self.start_time)} - interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; "
         epoch_string += f"cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}{Style.RESET_ALL}{Style.DIM}"
         print(epoch_string)
 
