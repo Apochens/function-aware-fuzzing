@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Tuple
 import random
 from copy import deepcopy
 
@@ -108,23 +108,33 @@ class MutExecutor:
     Mutation executor
     """
     def __init__(self) -> None:
-        self.mutators: List[Mutator] = [
-            DupMutator(), 
-            SwapMutator(),
-            ArgMutator(),
-            DelMutator(),
+        self.mutator_with_weight: List[Tuple[Mutator, float]] = [
+            (ArgMutator(), 0.4),
+            (DupMutator(), 0.2), 
+            (SwapMutator(), 0.2),
+            (DelMutator(), 0.2),
         ]
+
+    @property
+    def mutators(self):
+        return [mutator for mutator, _ in self.mutator_with_weight]
+
+    @property
+    def weights(self):
+        return [weight for _, weight in self.mutator_with_weight]
 
     def mutate(self, queue: List[Seed], *, top_n: int = 10, mut_limit: int = 5) -> List[Seed]:
         """Given a queue, mutate seeds with `top_n` priority. Perform no more than `mut_limit` mutations."""
         mutated_queue: List[Seed] = []
 
-        # only mutate seeds with `top_n` priority
-        for seed in queue[:top_n]:
+        # Only mutate seeds with `top_n` priority
+        # For now, for simplicity, we just use sample to random select #top_n seeds to mutate
+        # TODO: Use priority algorithm to select seeds
+        for seed in random.sample(queue, top_n) if top_n <= len(queue) else queue:
 
             for _ in range(0, seed.power):  # power schedule
                 mutated_seed: Seed = seed.copy()
-                mutator = random.choice(self.mutators)
+                mutator = random.choices(self.mutators, self.weights)[0]
                 mutator.mutate(mutated_seed)
                 mutated_queue.append(mutated_seed)
 

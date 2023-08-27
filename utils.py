@@ -39,16 +39,8 @@ def obsleted(f):
 
 
 def format_time(time_in_sec: float) -> str:
-
-    time_str = ''
-    time_str += f"{int(time_in_sec // 3600)}h"
-
-    time_in_sec = time_in_sec % 3600 
-
     hour, left = divmod(time_in_sec, 3600)
     min, sec = divmod(left, 60)
-
-
     return f'{int(hour):02d}:{int(min):02d}:{int(sec):02d}'
 
 

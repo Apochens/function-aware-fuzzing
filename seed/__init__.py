@@ -28,7 +28,7 @@ class Seed:
     def __init__(self, fn_list: List[List[Any]]) -> None:
         self.fns: List[Fn] = [Fn(fn_name, args) for fn_name, *args in fn_list]
         self.mutations: List[str] = []
-        self.power = 1
+        self.power = 1  # Now, for simplicity, we just use 1
 
         self.succ_count: int = 0
         self.fail_count: int = 0
