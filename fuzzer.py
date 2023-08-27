@@ -17,6 +17,7 @@ from exception import SeedDryRunTimeout
 
 Interesting = bool
 logger = logging.getLogger("fuzzer")
+PATH_SEED.mkdir(exist_ok=True)
 
 
 class Fuzzer:
