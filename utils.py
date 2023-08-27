@@ -49,7 +49,7 @@ def format_time(time_in_sec: float) -> str:
     min, sec = divmod(left, 60)
 
 
-    return f'{hour:02d}:{min:02d}:{sec:02d}'
+    return f'{int(hour):02d}:{int(min):02d}:{int(sec):02d}'
 
 
 def get_local_time() -> str:
