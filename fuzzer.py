@@ -16,55 +16,12 @@ from client import Client
 
 Interesting = bool
 logger = logging.getLogger("fuzzer")
-
-
-@obsleted
-def start_server() -> subprocess.Popen:
-    """Start the FTP server"""
-    server_path = "/home/ubuntu/experiments/LightFTP-gcov/Source/Release"
-    os.chdir(server_path)
-    lightftp_server = "./fftp fftp.conf 2200"
-
-    proc = subprocess.Popen(lightftp_server, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
-    if not proc:
-        raise Exception("Server down!")
-
-    return proc
-
-
-@obsleted
-def stop_server(proc: subprocess.Popen) -> int:
-    """Stop the FTP server"""
-    proc.communicate('q'.encode())
-    return proc.wait()
-
-
-@obsleted
-def collect_coverage() -> Tuple[float, int, float, int]:
-    """collect the execution coverage using gcovr"""
-    server_path = "/home/ubuntu/experiments/LightFTP-gcov/Source/Release"
-    os.chdir(server_path)
-    gcovr_proc = subprocess.Popen("gcovr -r .. -s | grep [lb][ir][a-z]*:", stdout=subprocess.PIPE, shell=True)
-    output = gcovr_proc.communicate()[0].decode().split('\n')
-
-    ln_per, ln_abs = "", ""
-    if (ln_match := re.match(r"lines: (\d+(?:\.\d+)?%) \((\d*) out of (\d*)\)", output[0])) is not None:
-        ln_per, ln_abs, _ = ln_match.groups()
-    else:
-        raise Exception("Cannot parse line coverage")
-    
-    bc_per, bc_abs = "", ""
-    if (bc_match := re.match(r"branches: (\d+(?:\.\d+)?%) \((\d*) out of (\d*)\)", output[1])) is not None:
-        bc_per, bc_abs, _ = bc_match.groups()
-    else:
-        raise Exception("Cannot parse branch coverage")
-
-    return float(ln_per[:-1]), int(ln_abs), float(bc_per[:-1]), int(bc_abs)
+FAZZ_ROOT = Path(__file__).parent
 
 
 class Fuzzer:
 
-    def __init__(self, protocol: str, target: Target, *, timeout: int = 1, log: bool = False) -> None:
+    def __init__(self: "Fuzzer", protocol: str, target: Target, *, timeout: int = 1, log: bool = False) -> None:
         self.protocol: Protocol = Protocol.new(protocol)
         self.queue: List[Seed] = [new_seed(self.protocol)]
         self.timeout = timeout
@@ -79,7 +36,7 @@ class Fuzzer:
         self.start_time = 0
         self.epoch_count = 0
 
-    def fuzz_one(self, seed: Seed) -> bool:
+    def fuzz_one(self: "Fuzzer", seed: Seed) -> bool:
         '''Execute one seed with coverage guided, return true if the seed is interesting'''
         # proc = start_server()
         self.target.start()
@@ -102,7 +59,7 @@ class Fuzzer:
     
         return False  # the seed is not interesting
 
-    def fuzz(self) -> None:
+    def fuzz(self: "Fuzzer") -> None:
         '''main fuzzing loop'''
         self.start_time: float = time.time()
         self.epoch_count: int = 0
