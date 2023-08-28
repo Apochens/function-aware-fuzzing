@@ -4,7 +4,7 @@ from typing import List, Tuple
 import matplotlib.pyplot as plt
 
 
-REGEX_PATTERN = r"Epoch (?P<epoch_count>\d+)] interval: (?P<interval>\d+\.\d+)s; total: (?P<total>\d+\.\d+)s; cov: (?P<lcov>\d+)/(?P<bcov>\d+); queue: (?P<queue_size>\d+)"
+REGEX_PATTERN = r"(?P<epoch_count>\d+)] interval: (?P<interval>\d+\.\d+)s; total: (?P<total>\d+\.\d+)s; cov: (?P<lcov>\d+)/(?P<bcov>\d+); queue: (?P<queue_size>\d+)"
 
 
 def extract_data(pattern: str, filename: str) -> Tuple[List[float], List[int], List[int]]:

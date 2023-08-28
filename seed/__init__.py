@@ -10,7 +10,7 @@ from exception import FnExecFailed
 from utils import get_local_time
 
 
-QUEUE_INDEX = 0
+SEED_INDEX = 0
 logger = logging.getLogger("seed")
 
 
@@ -55,16 +55,18 @@ class Seed:
         Save this seed (Interesting or Crash) into binary file by pickling
         """
         file = None
+        global SEED_INDEX
 
         if status == SeedStatus.Interesting:
             logger.debug("Save seed causing a coverage increase.")
-            file = path.joinpath(f"cov_{get_local_time()}_{QUEUE_INDEX:07d}")
+            file = path.joinpath(f"cov_{get_local_time()}_{SEED_INDEX:07d}")
 
         if status == SeedStatus.Crash:
             logger.debug("Save seed causing a crash.")
-            file = path.joinpath(f"crash_{get_local_time()}_{QUEUE_INDEX:07d}")
+            file = path.joinpath(f"crash_{get_local_time()}_{SEED_INDEX:07d}")
 
         if file is not None:
+            SEED_INDEX += 1
             pickle.dump(self, file.open('wb'))
 
     def copy(self) -> "Seed":
