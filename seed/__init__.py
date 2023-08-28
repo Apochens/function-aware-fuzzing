@@ -29,6 +29,7 @@ class Seed:
         self.fns: List[Fn] = [Fn(fn_name, args) for fn_name, *args in fn_list]
         self.mutations: List[str] = []
         self.power = 1  # Now, for simplicity, we just use 1
+        self.execute_count = 0
 
         self.succ_count: int = 0
         self.fail_count: int = 0
@@ -42,6 +43,7 @@ class Seed:
 
         Returns True when execution timeouts, otherwise False
         """
+        self.execute_count += 1
         for fn in self.fns:
             try:
                 logger.debug(f"Executing {fn.fn_name}: {fn}")
@@ -54,8 +56,8 @@ class Seed:
         """
         Save this seed (Interesting or Crash) into binary file by pickling
         """
-        file = None
         global SEED_INDEX
+        file = None
 
         if status == SeedStatus.Interesting:
             logger.debug("Save seed causing a coverage increase.")

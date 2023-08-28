@@ -154,7 +154,7 @@ class Fuzzer:
 
     def __write_fuzz_summary(self, total_time: float) -> None:
         formated_time = format_time(total_time)
-        info = f"Total {self.epoch_count} epoch, lcov: {self.line_cov}, bcov: {self.branch_cov}"
+        info = f"Total {self.epoch_count} epoch; lcov: {self.line_cov}; bcov: {self.branch_cov}"
 
         # stdout
         summary_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.BLUE}Summary{Fore.RESET}] - {formated_time} - {info}{Style.RESET_ALL}"
