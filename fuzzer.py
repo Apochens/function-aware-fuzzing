@@ -67,7 +67,7 @@ class Fuzzer:
 
         # Stop the server and check the exit status TODO: crash handler
         returncode = self.target.terminate()
-        if returncode != 0:
+        if returncode not in  (0, 2):
             raise ServerAbnormallyExited(f"Server abnormally exited with {returncode}.")
 
         if timeout:
@@ -95,14 +95,8 @@ class Fuzzer:
             cur_queue = self.queue if self.epoch_count == 0 \
                 else self.mut_executor.mutate(self.queue)
             
-            # execute
+            # execute the queue
             for seed in cur_queue:
-                # if self.fuzz_one(seed) and self.epoch_count != 0:
-                #     self.queue.append(seed)
-
-                #     # record the interesting seed
-                #     if self.log is not None:
-                #         self.log.write(str(seed))
                 if (status := self.fuzz_one(seed)) == SeedStatus.Interesting:
                     if self.epoch_count != 0:
                         self.queue.append(seed)
