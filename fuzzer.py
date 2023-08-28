@@ -1,18 +1,17 @@
 import time
 from colorama import Style, Fore
-from typing import List, Tuple, Optional
-import argparse, subprocess, os
-import re
+from typing import List
+import argparse
 import logging
-from pathlib import Path
+import multiprocessing as mp
 
 from mutator import MutExecutor
 from corpus import new_seed
 from seed import Seed, SeedStatus
 from server import Target, ServerBuilder
-from utils import obsleted, Addr, Protocol, get_local_time, PATH_LOG, format_time, PATH_SEED
+from utils import Protocol, get_local_time, PATH_LOG, format_time, PATH_SEED
 from client import Client
-from exception import SeedDryRunTimeout
+from exception import SeedDryRunTimeout, ServerAbnormallyExited
 
 
 Interesting = bool
@@ -56,11 +55,6 @@ class Fuzzer:
         self.target.start()
         time.sleep(0.1)
 
-        # Execute the seed
-        # obj = Client.new(self.protocol, self.target.addr)
-        # timeout = seed.execute(obj)
-
-        import multiprocessing as mp
         timeout = False
 
         exe_thread = mp.Process(target=self.execute, args=[seed,])
@@ -71,8 +65,10 @@ class Fuzzer:
             exe_thread.terminate()
             timeout = True
 
-        # Stop the server TODO: crash handler
-        self.target.terminate()
+        # Stop the server and check the exit status TODO: crash handler
+        returncode = self.target.terminate()
+        if returncode != 0:
+            raise ServerAbnormallyExited(f"Server abnormally exited with {returncode}.")
 
         if timeout:
             logger.debug("Seed execution timeouts...")

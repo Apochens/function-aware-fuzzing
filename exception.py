@@ -48,6 +48,10 @@ class ServerConfigNotFound(ServerException):
     pass
 
 
+class ServerAbnormallyExited(ServerException):
+    pass
+
+
 """
 Exceptions related to Seed
 """

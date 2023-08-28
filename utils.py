@@ -8,6 +8,7 @@ from pathlib import Path
 PATH_ROOT = Path(__file__).parent
 PATH_LOG = PATH_ROOT.joinpath('log')
 PATH_SEED = PATH_ROOT.joinpath('saved-seed')
+PATH_DUMMY = PATH_ROOT.joinpath('dummy')
 
 
 Addr = Tuple[str, int]

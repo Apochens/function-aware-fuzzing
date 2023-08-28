@@ -1,12 +1,11 @@
 """Seed for FTP"""
-from pathlib import Path
-
 from seed.arg import FileDescriptorArg, BooleanArg, StringArg, NumberArg, CallableArg
+from utils import PATH_DUMMY
 
 
 # Create the dummy file temp.txt
-dummy_file = Path("./dummy/temp.txt").absolute()
-dummy_file.parent.mkdir(exist_ok=True)
+PATH_DUMMY.mkdir(exist_ok=True)
+dummy_file = PATH_DUMMY.joinpath('temp.txt')
 dummy_file.write_text("Hello")
 
 
