@@ -53,6 +53,20 @@ class ServerAbnormallyExited(ServerException):
 
 
 """
+Exceptions related to Server
+"""
+class ClientException(FAException):
+    pass
+
+
+class ClientConnectFailed(ClientException):
+    pass
+
+
+class ClientNotFound(ClientException):
+    pass
+
+"""
 Exceptions related to Seed
 """
 
