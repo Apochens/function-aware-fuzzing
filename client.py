@@ -4,7 +4,7 @@ import logging
 from utils import Protocol, Addr
 
 
-logger = logging.getLogger("client")
+logger = logging.getLogger("fazz.client")
 
 
 class Client:

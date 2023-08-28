@@ -9,6 +9,7 @@ PATH_ROOT = Path(__file__).parent
 PATH_LOG = PATH_ROOT.joinpath('log')
 PATH_SEED = PATH_ROOT.joinpath('saved-seed')
 PATH_DUMMY = PATH_ROOT.joinpath('dummy')
+PATH_CONFIG = PATH_ROOT.joinpath('server-config.ini')
 
 
 Addr = Tuple[str, int]

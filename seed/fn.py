@@ -7,7 +7,7 @@ from seed.arg import Arg
 from exception import FnExecFailed, FnNotFound
 
 
-logger = logging.getLogger("fn")
+logger = logging.getLogger("fazz.seed.fn")
 
 
 class Fn:

@@ -4,7 +4,7 @@ from seed import Seed
 from utils import Protocol
 
 
-logger = logging.getLogger("corpus")
+logger = logging.getLogger("fazz.corpus")
 
 
 def new_seed(protocol: Protocol) -> Seed:

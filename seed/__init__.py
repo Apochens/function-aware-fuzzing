@@ -11,7 +11,7 @@ from utils import get_local_time
 
 
 SEED_INDEX = 0
-logger = logging.getLogger("seed")
+logger = logging.getLogger("fazz.seed")
 
 
 class SeedStatus(Enum):

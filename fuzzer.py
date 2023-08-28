@@ -15,7 +15,7 @@ from exception import SeedDryRunTimeout, ServerAbnormallyExited
 
 
 Interesting = bool
-logger = logging.getLogger("fuzzer")
+logger = logging.getLogger("fazz.fuzzer")
 PATH_SEED.mkdir(exist_ok=True)
 
 
