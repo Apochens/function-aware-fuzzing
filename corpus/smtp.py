@@ -1,22 +1,23 @@
 """Seed for SMTP"""
 from seed.arg import StringArg
+from seed.fn import Fn
+from seed import Seed
 
+SEED = Seed([
+    Fn("noop"),
+    Fn("help"),
 
-SEED = [
-    ["noop"],
-    ["help"],
+    Fn("helo"),
+    Fn("ehlo"),
 
-    ["helo"],
-    ["ehlo"],
+    Fn("expn", [StringArg("ubuntu")]),
+    Fn("rset"),
 
-    ["expn", StringArg("ubuntu")],
-    ["rset"],
+    Fn("mail", [StringArg("ubuntu@ubuntu")]),
+    Fn("rcpt", [StringArg("ubuntu@ubuntu")]),
+    Fn("data", [StringArg("hello")]),
 
-    ["mail", StringArg("ubuntu@ubuntu")],
-    ["rcpt", StringArg("ubuntu@ubuntu")],
-    ["data", StringArg("hello")],
+    Fn("docmd", [StringArg("BDAT")]),
 
-    ["docmd", StringArg("BDAT")],
-
-    ['quit']
-]
+    Fn('quit', is_last=True)
+])

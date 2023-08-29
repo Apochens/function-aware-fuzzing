@@ -15,9 +15,15 @@ class Fn:
     The function call, which is the component of a seed (class `Seed`). 
     A function call consists of a function name and a list of arguments (class `Arg`). 
     """
-    def __init__(self, fn_name: str, args: List[Arg]) -> None:
+    def __init__(self, fn_name: str, args: List[Arg] = [], *, is_last: bool = False) -> None:
         self.fn_name: str = fn_name
         self.args: List[Arg] = args
+
+        self._is_last = is_last
+
+    @property
+    def is_last(self) -> bool:
+        return self._is_last
 
     def execute(self, obj: object):
         """

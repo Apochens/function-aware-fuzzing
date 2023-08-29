@@ -25,8 +25,8 @@ class Seed:
     """
     The fuzzing seed, a list of function calls (class `Fn`)
     """
-    def __init__(self, fn_list: List[List[Any]]) -> None:
-        self.fns: List[Fn] = [Fn(fn_name, args) for fn_name, *args in fn_list]
+    def __init__(self, fn_list: List[Fn]) -> None:
+        self.fns: List[Fn] = fn_list
         self.mutations: List[str] = []
         self.power = 1  # Now, for simplicity, we just use 1
         self.execute_count = 0
@@ -49,6 +49,9 @@ class Seed:
                 logger.debug(f"Executing {fn.fn_name}: {fn}")
                 fn.execute(obj)
                 self.succ_count += 1
+
+                if fn.is_last:
+                    break
             except FnExecFailed:
                 self.fail_count += 1  
 
