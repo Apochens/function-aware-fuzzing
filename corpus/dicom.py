@@ -24,7 +24,7 @@ def defaul_dataset() -> Dataset:
 
 class DICOMDatasetArg(Arg[Dataset]):
     def mutate(self) -> None:
-        return super().mutate()
+        return 
 
     def unpack(self):
         return self.value
@@ -87,8 +87,12 @@ class SOPClassStore(Enum):
 
 
 SEED = Seed([
-    Fn('send_c_echo', [NumberArg(1, name='msg_id')]),
-    Fn('send_c_store', [DICOMFileDatasetArg(dcmread(dummy_file))]),
+    Fn('send_c_echo', [
+        NumberArg(1, name='msg_id')
+    ]),
+    Fn('send_c_store', [
+        DICOMFileDatasetArg(dcmread(dummy_file))
+    ]),
     Fn('send_c_find', [
         DICOMDatasetArg(defaul_dataset()), 
         EnumArg(SOPClassFind.PatientRootQueryRetrieveInformationModelFind, use_value=True), 
@@ -108,6 +112,10 @@ SEED = Seed([
         NumberArg(1, name="msg_id"), 
         NumberArg(2, name='priority')
     ]),
-    Fn('send_c_cancel', [NumberArg(1), NumberArg(1, nullable=True), EnumArg(SOPClassGet.PatientRootQueryRetrieveInformationModelGet)]),
+    Fn('send_c_cancel', [
+        NumberArg(1), 
+        NumberArg(1, nullable=True), 
+        EnumArg(SOPClassGet.PatientRootQueryRetrieveInformationModelGet)
+    ]),
     Fn('release', is_last=True)
 ])

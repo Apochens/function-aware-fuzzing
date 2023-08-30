@@ -9,7 +9,7 @@ from mutator import MutExecutor
 from corpus import new_seed
 from seed import Seed, SeedStatus
 from server import Target, ServerBuilder
-from utils import Protocol, get_local_time, PATH_LOG, format_time, PATH_SEED
+from utils import Protocol, get_local_time, PATH_LOG, format_time, PATH_SEED, Timer
 from client import Client
 from exception import SeedDryRunTimeout, ServerAbnormallyExited
 
@@ -36,10 +36,10 @@ class Fuzzer:
         self.target: Target = target  # Server tested
         self.mut_executor = MutExecutor()
 
+        # Recoring
         self.log = self.create_log() if log else None
-
-        self.start_time = 0
-        self.epoch_count = 0
+        self.timer = Timer()
+        self.start_time = 0.0
 
     def execute(self, seed: Seed):
         obj = Client.new(self.protocol, self.target.addr)
@@ -57,13 +57,14 @@ class Fuzzer:
 
             timeout = False
 
-            exe_thread = mp.Process(target=self.execute, args=[seed,])
-            exe_thread.start()
-            exe_thread.join(timeout=self.timeout_testcase)
+            with self.timer:  # Only count in the actual execution time
+                exe_thread = mp.Process(target=self.execute, args=[seed,])
+                exe_thread.start()
+                exe_thread.join(timeout=self.timeout_testcase)
 
-            if exe_thread.is_alive():
-                exe_thread.terminate()
-                timeout = True
+                if exe_thread.is_alive():
+                    exe_thread.terminate()
+                    timeout = True
 
         # Stop the server and check the exit status TODO: crash handler
 
@@ -82,20 +83,19 @@ class Fuzzer:
 
     def fuzz(self: "Fuzzer") -> None:
         '''main fuzzing loop'''
-        self.start_time: float = time.time()
-        self.epoch_count: int = 0
+        self.start_time = time.time()
 
         print(f"{Style.DIM}", end=None)
-        while ((epoch_start_time := time.time()) - self.start_time) < self.timeout * 60:
+        while self.timer.total_time < self.timeout * 60:
 
             # prepare execution queue (when epoch_count is 0, perform dry run)
-            cur_queue = self.queue if self.epoch_count == 0 \
+            cur_queue = self.queue if self.timer.epoch_count == 0 \
                 else self.mut_executor.mutate(self.queue)
             
             # execute the queue
             for seed in cur_queue:
                 if (status := self.fuzz_one(seed)) == SeedStatus.Interesting:
-                    if self.epoch_count != 0:
+                    if self.timer.epoch_count != 0:
                         self.queue.append(seed)
                         seed.save(PATH_SEED, status)
                         if self.log is not None:
@@ -104,28 +104,22 @@ class Fuzzer:
                     # TODO: handle crash seed
                     pass
                 elif status == SeedStatus.Timeout:
-                    if self.epoch_count == 0:
+                    if self.timer.epoch_count == 0:
                         raise SeedDryRunTimeout("The initial seed given is timeout")
 
-            self.epoch_count += 1
+            self.timer.count()
 
             # epoch log
-            epoch_time = time.time() - epoch_start_time
-            self.__write_epoch_status(epoch_time)
+            self._write_epoch_status()
 
         # summary log 
-        total_time = time.time() - self.start_time
-        self.__write_fuzz_summary(total_time)
+        self._write_total_status()
 
     def catch(self) -> None:
         """Only run the initial seeds"""
         logger.debug("Run one round for tcpdump or initialization test")
-        self.start_time: float = time.time()
-        self.epoch_count: int = 0
-
         self.fuzz_one(self.queue[0])
-
-        self.__write_epoch_status(1)
+        self._write_epoch_status()
 
     def create_log(self):
         """
@@ -137,21 +131,34 @@ class Fuzzer:
         log_path = PATH_LOG.joinpath(log_name)
         return log_path.open("w", encoding="utf-8")
 
-    def __write_epoch_status(self, epoch_time: float) -> None:
+    def _write_epoch_status(self) -> None:
         """write status to stdout and log file"""
-        epoch_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.GREEN}{self.epoch_count:05d}{Fore.RESET}] "
-        epoch_string += f"- {format_time(time.time() - self.start_time)} - interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; "
-        epoch_string += f"cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}{Style.RESET_ALL}{Style.DIM}"
+
+        interval = f"interval: {self.timer.epoch_time:.2f}s;"
+        total    = f"total: {self.timer.total_time:.2f}s;"
+        cov      = f"cov: {self.line_cov}/{self.branch_cov};"
+        queue    = f"queue: {len(self.queue)}"
+
+        epoch_string = " ".join([
+            f"{Style.RESET_ALL}{Style.BRIGHT}",
+            f"[{Fore.GREEN}{self.timer.epoch_count:05d}{Fore.RESET}]",
+            f"- {format_time(time.time() - self.start_time)} -",
+            interval, total, cov, queue,
+            f"{Style.RESET_ALL}{Style.DIM}"
+        ])
         print(epoch_string)
 
         # log
         if self.log is not None:
-            epoch_string = f"[{self.epoch_count:05d}] interval: {epoch_time:.2f}s; total: {time.time() - self.start_time:.2f}s; cov: {self.line_cov}/{self.branch_cov}; queue: {len(self.queue)}"
+            epoch_string = " ".join([
+                f"[{self.timer.epoch_count:05d}]",
+                interval, total, cov, queue,
+            ])
             self.log.write(f"{epoch_string}\n")
 
-    def __write_fuzz_summary(self, total_time: float) -> None:
-        formated_time = format_time(total_time)
-        info = f"Total {self.epoch_count} epoch; lcov: {self.line_cov}; bcov: {self.branch_cov}"
+    def _write_total_status(self) -> None:
+        formated_time = format_time(time.time() - self.start_time)
+        info = f"Total {self.timer.epoch_count} epoch in {self.timer.total_time:.2f}s; lcov: {self.line_cov}; bcov: {self.branch_cov}"
 
         # stdout
         summary_string = f"{Style.RESET_ALL}{Style.BRIGHT}[{Fore.BLUE}Summary{Fore.RESET}] - {formated_time} - {info}{Style.RESET_ALL}"
