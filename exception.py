@@ -66,6 +66,9 @@ class ClientConnectFailed(ClientException):
 class ClientNotFound(ClientException):
     pass
 
+class ClientNotInstalled(ClientException):
+    pass
+
 """
 Exceptions related to Seed
 """

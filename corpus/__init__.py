@@ -17,12 +17,14 @@ def new_seed(protocol: Protocol) -> Seed:
         from corpus.smtp import SEED
     if protocol == Protocol.DNS:
         from corpus.dns import SEED
+    if protocol == Protocol.DICOM:
+        from corpus.dicom import SEED
     
     if SEED is None:
         raise Exception(f"No seed found for {protocol.name}")
     
-    if len(SEED) == 0:
+    if SEED.len() == 0:
         logger.warning("The initial seed has no api call.")
 
     logger.debug(f"Use {protocol.name} seed")
-    return Seed(SEED)
+    return SEED

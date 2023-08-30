@@ -19,6 +19,7 @@ class Protocol(Enum):
     FTP = 959
     SMTP = 5321
     DNS = 1034
+    DICOM = None
 
     @classmethod
     def new(cls, protocol: str) -> "Protocol":
@@ -28,6 +29,8 @@ class Protocol(Enum):
             return cls.SMTP
         if protocol == 'dns':
             return cls.DNS
+        if protocol == 'dicom':
+            return cls.DICOM
         raise Exception("No such protocol")
 
 

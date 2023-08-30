@@ -2,7 +2,7 @@ from typing import Dict, Callable
 import logging
 
 from utils import Protocol, Addr
-from exception import ClientConnectFailed, ClientNotFound
+from exception import ClientConnectFailed, ClientNotFound, ClientNotInstalled
 
 
 logger = logging.getLogger("fazz.client")
@@ -22,6 +22,7 @@ class Client:
             Protocol.FTP: cls.ftpclient,
             Protocol.SMTP: cls.smtpclient,
             Protocol.DNS: cls.dnsclient,
+            Protocol.DICOM: cls.dicomclient,
         }
         
         if (client_builder := client_map.get(protocol, None)) is None:
@@ -62,12 +63,22 @@ class Client:
 
     @classmethod
     def dnsclient(cls, addr: Addr):
-        try:
-            from dns.resolver import Resolver
-        except ModuleNotFoundError:
-            raise Exception("Module not found: dnspython")
+        from dns.resolver import Resolver
         
         client = Resolver(configure=False)  # prevent it from reading /etc/resolve.conf
         client.nameservers = [addr[0]]
         client.port = addr[1]
+        return client
+    
+    @classmethod
+    def dicomclient(cls, addr: Addr):
+        from pynetdicom.ae import ApplicationEntity
+        from pynetdicom.sop_class import uid_to_sop_class
+        from pynetdicom.presentation import VerificationPresentationContexts, QueryRetrievePresentationContexts
+
+        ae = ApplicationEntity()
+        ae.requested_contexts = [*VerificationPresentationContexts, *QueryRetrievePresentationContexts]
+        ae.add_requested_context("1.2.840.10008.5.1.4.1.1.2")  #CTImageStorage
+        client = ae.associate(addr[0], addr[1])
+
         return client

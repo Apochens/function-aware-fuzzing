@@ -1,4 +1,4 @@
-"""Seed for DNS"""
+"""Seed for [DNS](https://www.rfc-editor.org/rfc/rfc1035)"""
 from dns.rdatatype import RdataType
 from dns.rdataclass import RdataClass
 

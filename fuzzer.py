@@ -52,23 +52,20 @@ class Fuzzer:
         Returns True is the seed is interesting, otherwise False
         '''
         # Start the server
-        self.target.start()
-        time.sleep(0.1)
+        with self.target as proc:
+            time.sleep(0.1)
 
-        timeout = False
+            timeout = False
 
-        exe_thread = mp.Process(target=self.execute, args=[seed,])
-        exe_thread.start()
-        exe_thread.join(timeout=self.timeout_testcase)
+            exe_thread = mp.Process(target=self.execute, args=[seed,])
+            exe_thread.start()
+            exe_thread.join(timeout=self.timeout_testcase)
 
-        if exe_thread.is_alive():
-            exe_thread.terminate()
-            timeout = True
+            if exe_thread.is_alive():
+                exe_thread.terminate()
+                timeout = True
 
         # Stop the server and check the exit status TODO: crash handler
-        returncode = self.target.terminate()
-        if returncode not in  (0, 2):
-            raise ServerAbnormallyExited(f"Server abnormally exited with {returncode}.")
 
         if timeout:
             logger.debug("Seed execution timeouts...")
@@ -172,7 +169,7 @@ class Fuzzer:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser('Function-Aware Fuzzer')
-    parser.add_argument('protocol', choices=['ftp', 'smtp', 'dns'])
+    parser.add_argument('protocol', choices=['ftp', 'smtp', 'dns', 'dicom'])
 
     parser.add_argument('-t', '--timeout', type=int, default=1)
     parser.add_argument('-d', "--debug", default=False, action="store_true")

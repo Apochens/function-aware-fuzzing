@@ -13,7 +13,7 @@ class Arg(ABC, Generic[T]):
     The wrapper of parameters in the signature of function calls (class `Fn`).
     To inherent this abstract class, `mutate` and `unpack` must be overrided.
     """
-    def __init__(self, value: T, *, mutable: bool = True, name: str = "") -> None:
+    def __init__(self, value: T, *, mutable: bool = True, name: str = "", nullable: bool = False) -> None:
         self.value = value
         self._mutable = mutable
 
@@ -128,18 +128,15 @@ class EnumArg(Arg[E]):
     """
     Argument wrapper for enumeration
     """
+    def __init__(self, value: E, *, mutable: bool = True, name: str = "", nullable: bool = False, use_value: bool = False) -> None:
+        super().__init__(value, mutable=mutable, name=name, nullable=nullable)
+        self.use_value = use_value
+
     def mutate(self) -> None:
         candidate = [member for member in type(self.value)]
         self.value = random.choice(candidate)
     
     def unpack(self) -> E:
-        return self.value
-    
-
-class AnyArg(Arg[T]):
-
-    def mutate(self) -> None:
-        pass
-
-    def unpack(self) -> T:
+        if self.use_value:
+            return self.value.value
         return self.value

@@ -20,14 +20,16 @@ class Server(ABC):
     """Abstract server wrapper"""
     name = "ServerWrapper"
 
-    def __init__(self, cmd: str, path: str, root: str, host: str, port: int) -> None:
+    def __init__(self, cmd: str, path: str, root: str, host: str, port: str, clean: Optional[str] = None) -> None:
         self.cmd: str = cmd
+        self.cmd_cleanup: Optional[str] = clean
+        
         self.path: str = path
         self.root: str = root
         self.old_path: str = ""
 
         self.__host = host
-        self.__port = port
+        self.__port = int(port)
 
         self.proc: Optional[subprocess.Popen] = None
 
@@ -35,21 +37,25 @@ class Server(ABC):
     def addr(self) -> Addr:
         return (self.__host, self.__port)
 
-    def start(self):
+    def _start(self) -> subprocess.Popen:
         if self.path:
             self.old_path = os.getcwd()
             os.chdir(self.path)
 
-        self.proc = subprocess.Popen(self.cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, shell=True)
+        self.proc = subprocess.Popen(self.cmd.split(' '), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         if self.proc is None:
             raise ServerNotStarted("Cannot start server properly!")
         if self.proc.returncode:
             raise ServerTerminated("Server is down after starting!")
-        
         logger.debug(f"Server is up at {self.addr}, pid is {self.proc.pid}")
+        return self.proc
 
     @abstractmethod
-    def terminate(self) -> int:
+    def _terminate(self) -> int:
+        pass
+
+    @abstractmethod
+    def _cleanup(self) -> None:
         pass
 
     def collect_coverage(self) -> Tuple[float, int, float, int]:
@@ -57,7 +63,7 @@ class Server(ABC):
         For now, we use gcovr to collect the coverage for convenience.
         In the future, we will use approach like that used by AFL to collect runtime code coverage 
         """
-        gcovr_proc = subprocess.Popen(f"gcovr -r {self.root} -s | grep [lb][ir][a-z]*:", stdout=subprocess.PIPE, shell=True)
+        gcovr_proc = subprocess.Popen(f"gcovr -r {self.root} -s | grep [lb][ir][a-z]*:", stdout=subprocess.PIPE, stdin=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
         output = gcovr_proc.communicate()[0].decode().split('\n')
 
         ln_per, ln_abs = "", ""
@@ -74,20 +80,34 @@ class Server(ABC):
 
         return float(ln_per[:-1]), int(ln_abs), float(bc_per[:-1]), int(bc_abs)
 
+    def __enter__(self) -> subprocess.Popen:
+        return self._start()
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        self._terminate()
+        self._cleanup()
+
     def __str__(self) -> str:
         return f"<Server {self.cmd} ({self.path})>"
 
 
 class Target(Server):
 
-    def terminate(self) -> int:
+    def _terminate(self) -> int:
         """Kill the server by default"""
+        logger.debug("Killing the server...")
         if self.proc:
-            subprocess.run("echo $(pgrep dnsmasq); kill -s 15 $(pgrep dnsmasq)", shell=True)
-            # self.proc.terminate()
-            # self.proc.kill()
-            return self.proc.returncode
+            self.proc.terminate()
+            return self.proc.wait()
         return 0
+    
+    def _cleanup(self) -> int:
+        """Do cleanup"""
+        if self.cmd_cleanup is None:
+            return 0
+        logger.debug(f"Executing cleanup command: {self.cmd_cleanup}")
+        proc_cleanup = subprocess.run(self.cmd_cleanup, shell=True)
+        return proc_cleanup.returncode
 
 
 class LightFTP(Server):
@@ -116,7 +136,6 @@ class ProFTPD(Server):
 
 
 class PureFTPD(Server):
-
     name = 'PureFTPD'
 
     def terminate(self) -> int:
@@ -144,4 +163,4 @@ class ServerBuilder:
         except KeyError:
             raise Exception(f"No target configuration found!")
         
-        return Target(target['cmd'], target['path'], target['root'], target['host'], int(target['port']))
+        return Target(**target)
