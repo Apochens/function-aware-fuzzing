@@ -8,7 +8,8 @@ SHM_ENV_VAR = "__AFL_SHM_ID"
 MAP_SIZE = (1 << 16)
 
 def check(bt):
-    a = ctypes.string_at(bt, MAP_SIZE)
+    print(type(bt))
+    a: bytes = ctypes.string_at(bt, MAP_SIZE)
     j = 0
     for i in a:
         if i != 0:
@@ -16,12 +17,21 @@ def check(bt):
     print('{} hits'.format(j))
 
 
-def start_server() -> subprocess.Popen:
-    server_path = "/home/linuxbrew/afl-lightftp/Source/Release/"
-    os.chdir(server_path)
-    lightftp_server = "./fftp"
+def check_new(shmem_pointer):
+    a: bytes = ctypes.string_at(shmem_pointer, MAP_SIZE)
+    sum = 0
+    for i in a:
+        print(i)
+        sum += 1
+    print(f"Total {sum} chunks")
 
-    proc = subprocess.Popen([lightftp_server], stdin=subprocess.PIPE, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, shell=True)
+
+def start_server() -> subprocess.Popen:
+    server_path = "/home/ubuntu/experiments/dcmtk/build/bin"
+    os.chdir(server_path)
+    server = "./dcmqrscp"
+
+    proc = subprocess.Popen(server.split(' '), stdin=subprocess.PIPE, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
     if not proc:
         raise Exception("Server down!")
 
@@ -29,7 +39,7 @@ def start_server() -> subprocess.Popen:
 
 
 def stop_server(proc: subprocess.Popen) -> int:
-    proc.communicate('q'.encode())
+    proc.terminate()
     return proc.wait()
 
 
@@ -71,7 +81,16 @@ if __name__ == "__main__":
     ctypes.memset(trace_bits, 0, MAP_SIZE)
 
     print("test...")
-    stop_server(start_server())
+    proc = start_server()
+
+    input()
+
+
+    check(trace_bits)
+
+    input()
+    stop_server(proc)
     print("end...")
 
     check(trace_bits)
+    check_new(trace_bits)
