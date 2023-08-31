@@ -1,4 +1,4 @@
-"""Seed for DICOM"""
+"""Seed for [DICOM](https://www.dicomstandard.org/current)"""
 from enum import Enum
 
 from pydicom import dcmread

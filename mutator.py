@@ -11,7 +11,7 @@ class Mutator(ABC):
     Mutator interface
     """
     @abstractmethod
-    def mutate(self, seed: Seed):
+    def mutate(self, seed: Seed) -> Seed:
         pass
 
     @abstractmethod
@@ -26,11 +26,15 @@ class DupMutator(Mutator):
     """
     Choose one api call in a seed to duplicate it.
     """
-    def mutate(self, seed: Seed) -> None:
+    def mutate(self, seed: Seed) -> Seed:
+        seed = seed.copy()
+
         seed.mutations.append(self.name())
 
         randpos: int = random.randrange(0, seed.len())
         seed.insert(randpos, deepcopy(seed[randpos]))
+
+        return seed
 
     def name(self) -> str:
         return "dup"
@@ -40,12 +44,12 @@ class SwapMutator(Mutator):
     """
     Choose two api calls in a seed to swap them
     """
-    def mutate(self, seed: Seed) -> None:
-
+    def mutate(self, seed: Seed) -> Seed:
+        seed = seed.copy()
         # If the number of API calls in a seed is less than 2, 
         # it will cause an infinite loop when choosing API calls to exchange 
         if seed.len() < 2:
-            return
+            return seed
 
         seed.mutations.append(self.name())
 
@@ -55,6 +59,8 @@ class SwapMutator(Mutator):
 
         seed[randpos1], seed[randpos2] = seed[randpos2], seed[randpos1]
 
+        return seed
+
     def name(self) -> str:
         return "swap"
 
@@ -63,12 +69,15 @@ class DelMutator(Mutator):
     """
     Choose one api call in a seed to delete it
     """
-    def mutate(self, seed: Seed):
+    def mutate(self, seed: Seed) -> Seed:
+        seed = seed.copy()
         seed.mutations.append(self.name())
 
         if seed.len() > 2:
             randpos = random.randrange(0, seed.len())
             seed.fns.remove(seed[randpos])
+        
+        return seed
         
     def name(self) -> str:
         return "del"
@@ -78,7 +87,8 @@ class ArgMutator(Mutator):
     """
     Choose one api call in a seed to mutate its arguments
     """
-    def mutate(self, seed: Seed) -> None:
+    def mutate(self, seed: Seed) -> Seed:
+        seed = seed.copy()
         seed.mutations.append(self.name())
 
         randpos: int = random.randrange(0, seed.len())
@@ -87,6 +97,8 @@ class ArgMutator(Mutator):
         for arg in fn.args:
             if arg.mutable:
                 arg.mutate()
+        
+        return seed
     
     def name(self) -> str:
         return "arg"
@@ -125,17 +137,11 @@ class MutExecutor:
 
     def mutate(self, queue: List[Seed], *, top_n: int = 10, mut_limit: int = 5) -> List[Seed]:
         """Given a queue, mutate seeds with `top_n` priority. Perform no more than `mut_limit` mutations."""
-        mutated_queue: List[Seed] = []
-
         # Only mutate seeds with `top_n` priority
         # For now, for simplicity, we just use sample to random select #top_n seeds to mutate
         # TODO: Use priority algorithm to select seeds
-        for seed in random.sample(queue, top_n) if top_n <= len(queue) else queue:
+        selected_seeds = random.sample(queue, top_n) if top_n < len(queue) else queue
 
-            for _ in range(0, seed.power):  # power schedule
-                mutated_seed: Seed = seed.copy()
-                mutator = random.choices(self.mutators, self.weights)[0]
-                mutator.mutate(mutated_seed)
-                mutated_queue.append(mutated_seed)
-
-        return mutated_queue
+        return [mutator.mutate(seed) 
+                for seed in selected_seeds 
+                for mutator in random.choices(self.mutators, self.weights, k=seed.power)]
