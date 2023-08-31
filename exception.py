@@ -79,3 +79,7 @@ class SeedException(FAException):
 
 class SeedDryRunTimeout(SeedException):
     pass
+
+
+class SeedNotFound(SeedException):
+    pass

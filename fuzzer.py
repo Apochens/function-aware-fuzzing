@@ -6,10 +6,10 @@ import logging
 import multiprocessing as mp
 
 from mutator import MutExecutor
-from corpus import new_seed
+from protocol import new_seed, Protocol
 from seed import Seed, SeedStatus
 from server import Target, ServerBuilder
-from utils import Protocol, get_local_time, PATH_LOG, format_time, PATH_SEED, Timer
+from utils import get_local_time, PATH_LOG, format_time, PATH_SEED, Timer
 from client import Client
 from exception import SeedDryRunTimeout, ServerAbnormallyExited
 

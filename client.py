@@ -1,7 +1,8 @@
 from typing import Dict, Callable
 import logging
 
-from utils import Protocol, Addr
+from utils import Addr
+from protocol import Protocol
 from exception import ClientConnectFailed, ClientNotFound, ClientNotInstalled
 
 
